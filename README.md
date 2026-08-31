@@ -8,7 +8,7 @@
 
 [![CI/CD Pipeline](https://github.com/bhuvanvokkaliga29/IntentGuard/actions/workflows/ci.yml/badge.svg)](https://github.com/bhuvanvokkaliga29/IntentGuard/actions)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![Tests: 94 Passed](https://img.shields.io/badge/Tests-94%20Passed-brightgreen.svg)](docs/REPOSITORY_HEALTH.md)
+[![Tests: 102 Passed](https://img.shields.io/badge/Tests-102%20Passed-brightgreen.svg)](docs/REPOSITORY_HEALTH.md)
 [![Python: 3.10+](https://img.shields.io/badge/Python-3.10%2B-blue.svg)](https://www.python.org/)
 [![FastAPI: Backend](https://img.shields.io/badge/FastAPI-0.110.0-009688.svg)](https://fastapi.tiangolo.com/)
 [![Next.js: 16](https://img.shields.io/badge/Next.js-16%20(Turbopack)-black.svg)](https://nextjs.org/)

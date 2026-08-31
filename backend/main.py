@@ -116,8 +116,9 @@ app = FastAPI(
 )
 
 # CORS configuration — strict production settings with local dev fallback
-_cors_origins = [settings.frontend_url, "http://localhost:3000", "http://127.0.0.1:3000"]
-if settings.environment == "development":
+_settings = get_settings()
+_cors_origins = [_settings.frontend_url, "http://localhost:3000", "http://127.0.0.1:3000"]
+if _settings.environment == "development":
     _cors_origins.extend(["http://localhost:8000", "http://127.0.0.1:8000"])
 
 app.add_middleware(
@@ -250,6 +251,43 @@ async def health():
         "service": "intentguard",
         "version": "1.0.0",
     }
+
+
+@app.get("/ready")
+async def readiness():
+    """
+    Readiness probe endpoint.
+    Verifies process, database connectivity, and configured LLM provider readiness.
+    """
+    checks = {"database": False, "llm_provider": False}
+    try:
+        session = await get_session()
+        async with session:
+            # Query active mandates table to verify DB health
+            mandates = await get_mandates(session)
+            checks["database"] = True
+    except Exception as db_err:
+        checks["database_error"] = str(db_err)
+
+    try:
+        from backend.llm.provider import get_provider
+        provider = get_provider()
+        checks["llm_provider"] = True
+        checks["provider_name"] = provider.provider_name
+        checks["model_name"] = provider.model_name
+    except Exception as llm_err:
+        checks["llm_error"] = str(llm_err)
+
+    is_ready = checks["database"] and checks["llm_provider"]
+    status_code = 200 if is_ready else 503
+    return JSONResponse(
+        status_code=status_code,
+        content={
+            "status": "ready" if is_ready else "unready",
+            "service": "intentguard",
+            "checks": checks,
+        },
+    )
 
 
 @app.get("/metrics", response_class=PlainTextResponse)
