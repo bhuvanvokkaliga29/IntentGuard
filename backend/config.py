@@ -27,7 +27,22 @@ class Settings(BaseSettings):
     xai_model: str = Field(default="grok-3-mini")
 
     # ── Database ──────────────────────────────────────────────
-    database_url: str = Field(default="sqlite+aiosqlite:///./intentguard.db")
+    database_url: str = Field(
+        default="sqlite+aiosqlite:///./intentguard.db",
+        description="Database URL (SQLite for dev, PostgreSQL for prod e.g. postgresql+asyncpg://...)"
+    )
+
+    # ── Async Queue & Redis (Production) ──────────────────────
+    redis_url: Optional[str] = Field(
+        default=None,
+        description="Redis broker URL for asynchronous task queue (e.g., redis://localhost:6379/0)"
+    )
+
+    # ── Environment & Observability ───────────────────────────
+    environment: str = Field(default="development", description="'development', 'staging', or 'production'")
+    log_format: str = Field(default="json", description="Structured log format: 'json' or 'text'")
+    prometheus_enabled: bool = Field(default=True, description="Enable Prometheus metrics at /metrics")
+    otlp_endpoint: Optional[str] = Field(default=None, description="OpenTelemetry / centralized collector endpoint")
 
     # ── Frontend URL (for CORS) ───────────────────────────────
     frontend_url: str = Field(default="http://localhost:3000")

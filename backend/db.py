@@ -200,15 +200,28 @@ _session_factory = None
 
 
 async def get_engine():
-    """Get or create the async engine."""
+    """Get or create the async engine (SQLite for local dev, PostgreSQL for production)."""
     global _engine
     if _engine is None:
         settings = get_settings()
-        _engine = create_async_engine(
-            settings.database_url,
-            echo=False,
-            future=True,
-        )
+        db_url = settings.database_url
+        if "postgres" in db_url:
+            # Production PostgreSQL connection pooling
+            _engine = create_async_engine(
+                db_url,
+                echo=False,
+                future=True,
+                pool_size=20,
+                max_overflow=10,
+                pool_pre_ping=True,
+            )
+        else:
+            # Development SQLite engine
+            _engine = create_async_engine(
+                db_url,
+                echo=False,
+                future=True,
+            )
     return _engine
 
 

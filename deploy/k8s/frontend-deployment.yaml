@@ -1,0 +1,49 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: intentguard-frontend
+  namespace: intentguard
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: intentguard-frontend
+  template:
+    metadata:
+      labels:
+        app: intentguard-frontend
+    spec:
+      containers:
+        - name: frontend
+          image: intentguard/frontend:latest
+          ports:
+            - containerPort: 3000
+          env:
+            - name: NEXT_PUBLIC_API_URL
+              value: "http://intentguard-backend-service:8000"
+          resources:
+            limits:
+              cpu: "500m"
+              memory: "512Mi"
+            requests:
+              cpu: "100m"
+              memory: "256Mi"
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 3000
+            initialDelaySeconds: 10
+            periodSeconds: 20
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: intentguard-frontend-service
+  namespace: intentguard
+spec:
+  type: ClusterIP
+  ports:
+    - port: 3000
+      targetPort: 3000
+  selector:
+    app: intentguard-frontend

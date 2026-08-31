@@ -1,0 +1,100 @@
+version: '3.8'
+
+services:
+  # ── PostgreSQL Database ──────────────────────────────────────
+  postgres:
+    image: postgres:16-alpine
+    container_name: intentguard-postgres
+    restart: always
+    environment:
+      POSTGRES_DB: intentguard
+      POSTGRES_USER: intentguard
+      POSTGRES_PASSWORD: intentguard_secure_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U intentguard -d intentguard"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ── Redis Task Broker ────────────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    container_name: intentguard-redis
+    restart: always
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ── IntentGuard FastAPI Backend ──────────────────────────────
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: intentguard-backend
+    restart: always
+    environment:
+      ENVIRONMENT: production
+      LOG_FORMAT: json
+      PROMETHEUS_ENABLED: "true"
+      DATABASE_URL: postgresql+asyncpg://intentguard:intentguard_secure_password@postgres:5432/intentguard
+      REDIS_URL: redis://redis:6379/0
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      XAI_API_KEY: ${XAI_API_KEY:-}
+      LLM_PROVIDER: ${LLM_PROVIDER:-gemini}
+    ports:
+      - "8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  # ── Asynchronous Background Worker ───────────────────────────
+  worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: intentguard-worker
+    command: ["python", "backend/worker.py"]
+    restart: always
+    environment:
+      ENVIRONMENT: production
+      LOG_FORMAT: json
+      DATABASE_URL: postgresql+asyncpg://intentguard:intentguard_secure_password@postgres:5432/intentguard
+      REDIS_URL: redis://redis:6379/0
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      XAI_API_KEY: ${XAI_API_KEY:-}
+      LLM_PROVIDER: ${LLM_PROVIDER:-gemini}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  # ── Next.js Frontend UI ──────────────────────────────────────
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: intentguard-frontend
+    restart: always
+    environment:
+      NEXT_PUBLIC_API_URL: http://backend:8000
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+
+volumes:
+  postgres_data:
+  redis_data:

@@ -59,20 +59,24 @@ from backend.orchestrator.event_bus import get_event_bus
 from backend.orchestrator.orchestrator import get_agent_orchestrator
 from backend.agent.proficiency import get_proficiency_engine
 
-# Configure logging
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s [%(name)s] %(levelname)s: %(message)s",
-)
-logger = logging.getLogger("intentguard.api")
-
+from backend.logging_config import configure_logging, correlation_id_ctx
+from backend.metrics import metrics
+from backend.tasks import submit_async_evaluation, get_task_status
+from starlette.requests import Request
+from starlette.responses import Response, PlainTextResponse
 
 # ── Lifespan ─────────────────────────────────────────────────
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """Application lifespan — initialize DB on startup."""
-    logger.info("[STARTUP] Initializing database...")
+    """Application lifespan — configure structured logging & initialize DB on startup."""
+    settings = get_settings()
+    configure_logging(
+        log_format=settings.log_format,
+        environment=settings.environment,
+    )
+    logger = logging.getLogger("intentguard.api")
+    logger.info(f"[STARTUP] Initializing database (Environment: {settings.environment})...")
     await init_db()
 
     # Seed data if empty
@@ -119,6 +123,37 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+@app.middleware("http")
+async def observability_and_metrics_middleware(request: Request, call_next):
+    """Propagate correlation ID, track request latency, and record Prometheus metrics."""
+    trace_id = request.headers.get("X-Correlation-ID") or request.headers.get("X-Trace-ID") or str(uuid.uuid4())
+    token = correlation_id_ctx.set(trace_id)
+    start_time = time.time()
+
+    try:
+        response = await call_next(request)
+        duration = time.time() - start_time
+        metrics.record_request(
+            endpoint=request.url.path,
+            method=request.method,
+            status_code=response.status_code,
+            duration_sec=duration,
+        )
+        response.headers["X-Correlation-ID"] = trace_id
+        return response
+    except Exception as e:
+        duration = time.time() - start_time
+        metrics.record_request(
+            endpoint=request.url.path,
+            method=request.method,
+            status_code=500,
+            duration_sec=duration,
+        )
+        raise e
+    finally:
+        correlation_id_ctx.reset(token)
 
 
 # ── Request/Response Models ──────────────────────────────────
@@ -211,6 +246,42 @@ async def health():
         "service": "intentguard",
         "version": "1.0.0",
     }
+
+
+@app.get("/metrics", response_class=PlainTextResponse)
+async def get_metrics():
+    """Expose Prometheus telemetry and observability metrics."""
+    return PlainTextResponse(metrics.generate_prometheus_output())
+
+
+# ── Asynchronous Task Queue Endpoints (Non-blocking) ─────────
+
+class AsyncTaskSubmitRequest(BaseModel):
+    transaction_id: str
+    mandate_id: Optional[str] = None
+    proposer_agent_type: Optional[str] = "buying_agent"
+    objective: Optional[str] = "BEST_RATING"
+
+
+@app.post("/tasks/evaluate/async")
+async def submit_async_task(req: AsyncTaskSubmitRequest):
+    """Enqueue an asynchronous financial evaluation task."""
+    result = await submit_async_evaluation(
+        transaction_id=req.transaction_id,
+        mandate_id=req.mandate_id,
+        proposer_agent_type=req.proposer_agent_type,
+        objective=req.objective,
+    )
+    return result
+
+
+@app.get("/tasks/{task_id}")
+async def get_async_task_status(task_id: str):
+    """Poll the status and result of an asynchronous task."""
+    task = get_task_status(task_id)
+    if not task:
+        raise HTTPException(status_code=404, detail="Task ID not found")
+    return task
 
 
 @app.get("/config/provider")

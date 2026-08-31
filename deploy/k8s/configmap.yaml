@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: intentguard-config
+  namespace: intentguard
+data:
+  ENVIRONMENT: "production"
+  LOG_FORMAT: "json"
+  PROMETHEUS_ENABLED: "true"
+  CONFIDENCE_THRESHOLD_HIGH: "0.75"
+  CONFIDENCE_THRESHOLD_LOW: "0.40"
+  SELF_CONSISTENCY_SAMPLES: "3"
+  API_PORT: "8000"
+  DATABASE_URL: "postgresql+asyncpg://intentguard:intentguard_secure_pass@postgres-service:5432/intentguard"
+  REDIS_URL: "redis://redis-service:6379/0"

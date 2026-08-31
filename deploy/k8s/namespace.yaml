@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: intentguard
+  labels:
+    app.kubernetes.io/name: intentguard
+    app.kubernetes.io/part-of: intentguard-control-plane
