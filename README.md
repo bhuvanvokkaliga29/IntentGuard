@@ -6,6 +6,7 @@
 
 ---
 
+[![CI/CD Pipeline](https://github.com/bhuvanvokkaliga29/IntentGuard/actions/workflows/ci.yml/badge.svg)](https://github.com/bhuvanvokkaliga29/IntentGuard/actions)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Tests: 77 Passed](https://img.shields.io/badge/Tests-77%20Passed-brightgreen.svg)](docs/REPOSITORY_HEALTH.md)
 [![Python: 3.10+](https://img.shields.io/badge/Python-3.10%2B-blue.svg)](https://www.python.org/)
