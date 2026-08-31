@@ -1,0 +1,106 @@
+@import "tailwindcss";
+
+@theme {
+  /* Colors */
+  --color-void: #08090a;
+  --color-carbon: #0f1011;
+  --color-obsidian: #161718;
+  --color-graphite: #23252a;
+  --color-smoke: #383b3f;
+  --color-ash: #62666d;
+  --color-fog: #8a8f98;
+  --color-mist: #d0d6e0;
+  --color-bone: #e5e5e6;
+  --color-paper: #ffffff;
+  --color-acid-lime: #e4f222;
+  --color-pulse-green: #27a644;
+  --color-coral-red: #eb5757;
+  --color-signal-teal: #02b8cc;
+  --color-iris-violet: #6366f1;
+  --color-lavender: #8b5cf6;
+
+  /* Typography */
+  --font-inter: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+
+
+  /* Border Radius */
+  --radius-sm: 2px;
+  --radius-md: 4px;
+  --radius-lg: 6px;
+  --radius-xl: 12px;
+  --radius-full: 9999px;
+
+  /* Shadows */
+  --shadow-sm: rgba(0, 0, 0, 0.4) 0px 2px 4px 0px;
+  --shadow-md: rgba(0, 0, 0, 0.2) 0px 0px 12px 0px inset;
+  --shadow-subtle: rgb(35, 37, 42) 0px 0px 0px 1px inset;
+  --shadow-subtle-2: rgba(0, 0, 0, 0.2) 0px 0px 0px 1px;
+  --shadow-xl: rgba(8, 9, 10, 0.6) 0px 4px 32px 0px;
+}
+
+:root {
+  --background: var(--color-void);
+  --foreground: var(--color-mist);
+}
+
+body {
+  color: var(--foreground);
+  background: var(--background);
+  font-family: var(--font-inter);
+  font-feature-settings: 'cv01' on, 'ss03' on, 'zero' on;
+  font-size: 15px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+@layer utilities {
+  .text-display {
+    @apply text-[72px] font-[510] leading-none tracking-[-0.022em] text-paper;
+  }
+  .text-heading-lg {
+    @apply text-[64px] font-[510] leading-none tracking-[-0.022em] text-paper;
+  }
+  .text-heading {
+    @apply text-[48px] font-[510] leading-none tracking-[-0.022em] text-paper;
+  }
+  .text-heading-sm {
+    @apply text-[32px] font-normal leading-[1.13] tracking-[-0.022em] text-paper;
+  }
+  .text-subheading {
+    @apply text-[24px] font-normal leading-[1.33] tracking-[-0.012em] text-paper;
+  }
+  .text-body-lg {
+    @apply text-[20px] font-[590] leading-[1.33] tracking-[-0.012em];
+  }
+  
+  .linear-card {
+    @apply bg-carbon rounded-xl shadow-subtle p-6;
+  }
+
+  .linear-panel {
+    @apply bg-obsidian rounded-xl shadow-subtle p-6;
+  }
+
+  .linear-input {
+    @apply bg-white/5 border border-white/10 rounded-lg px-3.5 py-3 text-mist placeholder-fog outline-none focus:border-mist transition-colors text-[14px];
+  }
+
+  .btn-primary {
+    @apply bg-acid-lime text-void font-[510] rounded-lg px-4 py-2.5 text-[14px] hover:brightness-110 transition-all;
+    box-shadow: 0px 5px 2px 0px rgba(0,0,0,0.01), 0px 3px 2px 0px rgba(0,0,0,0.04), 0px 1px 1px 0px rgba(0,0,0,0.07);
+  }
+
+  .btn-ghost {
+    @apply bg-transparent border border-graphite text-mist font-normal rounded-lg px-3 py-2 text-[13px] hover:bg-carbon transition-colors;
+  }
+  
+  .btn-pill {
+    @apply bg-white/5 text-mist rounded-full px-3 py-1 text-[13px] hover:bg-white/10 transition-colors;
+  }
+
+  .badge {
+    @apply bg-white/5 text-fog rounded-md px-1.5 py-0.5 text-[12px] whitespace-nowrap;
+  }
+}

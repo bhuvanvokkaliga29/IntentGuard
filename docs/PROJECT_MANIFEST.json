@@ -1,0 +1,12 @@
+{
+    "project_name": "IntentGuard",
+    "tagline": "Within the limit isn't enough. Verify the intent.",
+    "track": "Track 1 \u2014 AI Growth & Agentic Commerce",
+    "stack": [
+        "Next.js",
+        "FastAPI",
+        "Python",
+        "React",
+        "Gemini 3.1 Pro"
+    ]
+}
