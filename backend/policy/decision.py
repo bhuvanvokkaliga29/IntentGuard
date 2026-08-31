@@ -2,15 +2,17 @@
 IntentGuard — Deterministic Policy / Decision Engine
 
 The FINAL decision is ALWAYS deterministic.
-The LLM NEVER outputs ALLOW / FLAG / BLOCK / ESCALATE directly.
+The LLM NEVER outputs ALLOW / BLOCK / ESCALATE directly.
 
-Decision logic:
-- Hard constraint failure → BLOCK (no semantic call needed)
-- Structural pass + FIT + confidence >= threshold → ALLOW
-- Structural pass + NO_FIT + confidence >= threshold → BLOCK
-- Structural pass + AMBIGUOUS → FLAG
-- Confidence < threshold → FLAG or ESCALATE
-- Missing critical information → ESCALATE
+Decision states (exactly three authorization outcomes):
+
+  ALLOW    — sufficient evidence + structural pass + semantic fit + high confidence
+  BLOCK    — deterministic structural violation OR confident semantic contradiction
+  ESCALATE — insufficient evidence, unresolved ambiguity, model disagreement,
+             low confidence, or critical verification failure
+
+ESCALATE always routes to human review. The system never silently auto-approves
+when evidence is insufficient.
 
 This module is unit-testable independently of any LLM.
 """
@@ -42,7 +44,7 @@ def decide(
     
     Returns:
         Dict with:
-        - final_decision: FinalDecision enum value
+        - final_decision: ALLOW, BLOCK, or ESCALATE
         - reasoning: str explaining why this decision was made
         - decision_path: str describing which logic branch was taken
     """
@@ -58,7 +60,7 @@ def decide(
                 f"{'; '.join(reasons)}. "
                 f"No semantic judgment was required."
             ),
-            "decision_path": "structural_hard_fail → BLOCK",
+            "decision_path": "structural_hard_fail -> BLOCK",
         }
 
     # ── Path 2: Missing critical information → ESCALATE ───────
@@ -69,7 +71,7 @@ def decide(
                 "Insufficient information to determine whether the transaction "
                 "fits the mandate. The transaction requires human review."
             ),
-            "decision_path": "insufficient_evidence → ESCALATE",
+            "decision_path": "insufficient_evidence -> ESCALATE",
         }
 
     # ── Path 3: No semantic verdict available → ESCALATE ──────
@@ -80,7 +82,7 @@ def decide(
                 "Semantic judgment could not be completed. "
                 "The transaction requires human review."
             ),
-            "decision_path": "no_semantic_verdict → ESCALATE",
+            "decision_path": "no_semantic_verdict -> ESCALATE",
         }
 
     # ── Path 4: Very low confidence → ESCALATE ───────────────
@@ -93,32 +95,32 @@ def decide(
                 f"The system cannot make a reliable determination. "
                 f"Human review is required."
             ),
-            "decision_path": "very_low_confidence → ESCALATE",
+            "decision_path": "very_low_confidence -> ESCALATE",
         }
 
-    # ── Path 5: AMBIGUOUS verdict → FLAG ──────────────────────
+    # ── Path 5: AMBIGUOUS verdict → ESCALATE ──────────────────
     if majority_verdict == SemanticVerdict.AMBIGUOUS.value:
         return {
-            "final_decision": FinalDecision.FLAG.value,
+            "final_decision": FinalDecision.ESCALATE.value,
             "reasoning": (
                 f"Semantic judgment is ambiguous (confidence: {confidence_score:.2f}). "
                 f"The transaction may or may not fit the mandate purpose. "
-                f"Flagged for human review."
+                f"Escalated for human review."
             ),
-            "decision_path": "semantic_ambiguous → FLAG",
+            "decision_path": "semantic_ambiguous -> ESCALATE",
         }
 
-    # ── Path 6: Low confidence on any verdict → FLAG ──────────
+    # ── Path 6: Low confidence on any verdict → ESCALATE ──────
     if confidence_score < thresholds.confidence_high:
         return {
-            "final_decision": FinalDecision.FLAG.value,
+            "final_decision": FinalDecision.ESCALATE.value,
             "reasoning": (
                 f"Confidence score ({confidence_score:.2f}) is below the high-confidence "
                 f"threshold ({thresholds.confidence_high:.2f}). "
                 f"Semantic verdict was '{majority_verdict}' but confidence is insufficient "
-                f"for an automatic decision. Flagged for human review."
+                f"for an automatic decision. Escalated for human review."
             ),
-            "decision_path": f"low_confidence_{majority_verdict} → FLAG",
+            "decision_path": f"low_confidence_{majority_verdict} -> ESCALATE",
         }
 
     # ── Path 7: High confidence + FIT → ALLOW ────────────────
@@ -130,7 +132,7 @@ def decide(
                 f"Semantic judgment indicates the transaction fits the mandate purpose "
                 f"(confidence: {confidence_score:.2f}). Approved."
             ),
-            "decision_path": "structural_pass + semantic_fit + high_confidence → ALLOW",
+            "decision_path": "structural_pass + semantic_fit + high_confidence -> ALLOW",
         }
 
     # ── Path 8: High confidence + NO_FIT → BLOCK ─────────────
@@ -142,16 +144,16 @@ def decide(
                 f"the transaction does NOT fit the mandate purpose "
                 f"(confidence: {confidence_score:.2f}). Blocked."
             ),
-            "decision_path": "structural_pass + semantic_no_fit + high_confidence → BLOCK",
+            "decision_path": "structural_pass + semantic_no_fit + high_confidence -> BLOCK",
         }
 
-    # ── Fallback: FLAG ────────────────────────────────────────
+    # ── Fallback: ESCALATE ────────────────────────────────────
     return {
-        "final_decision": FinalDecision.FLAG.value,
+        "final_decision": FinalDecision.ESCALATE.value,
         "reasoning": (
             f"Unable to resolve to a definitive decision. "
             f"Verdict: '{majority_verdict}', confidence: {confidence_score:.2f}. "
-            f"Flagged for human review."
+            f"Escalated for human review."
         ),
-        "decision_path": "fallback → FLAG",
+        "decision_path": "fallback -> ESCALATE",
     }

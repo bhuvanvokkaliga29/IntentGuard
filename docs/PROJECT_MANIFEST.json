@@ -1,12 +1,31 @@
 {
     "project_name": "IntentGuard",
     "tagline": "Within the limit isn't enough. Verify the intent.",
-    "track": "Track 1 \u2014 AI Growth & Agentic Commerce",
+    "track": "Track 1 — AI Growth & Agentic Commerce",
     "stack": [
-        "Next.js",
         "FastAPI",
         "Python",
+        "Next.js",
         "React",
-        "Gemini 3.1 Pro"
-    ]
+        "Google Gemini 2.5 Flash",
+        "xAI Grok 3 Mini",
+        "SQLite",
+        "PostgreSQL"
+    ],
+    "models": {
+        "primary": "gemini-2.5-flash",
+        "secondary_validation": "grok-3-mini",
+        "offline_simulation": "mock"
+    },
+    "evaluation": {
+        "authoritative_report": "docs/reports/evaluation_report.json",
+        "dataset": "backend/data/synthetic_dataset.json",
+        "test_sample_size": 100,
+        "total_dataset_size": 500
+    },
+    "invariants": {
+        "authorization_states": ["ALLOW", "BLOCK", "ESCALATE"],
+        "untrusted_proposers": ["Buying Agent", "Recommendation Agent", "Voice Agent"],
+        "supervisory_authority": "IntentGuard Main Control Agent"
+    }
 }

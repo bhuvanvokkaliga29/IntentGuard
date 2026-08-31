@@ -36,14 +36,14 @@ def test_prompt_injection_in_untrusted_description():
         majority_verdict="ambiguous",
         confidence_score=0.45,
     )
-    assert decision_ambiguous["final_decision"] == FinalDecision.FLAG.value
+    assert decision_ambiguous["final_decision"] == FinalDecision.ESCALATE.value
 
     decision_nofit = decide(
         structural_pass=structural.overall_pass,
         majority_verdict="no_fit",
         confidence_score=0.85,
     )
-    assert decision_nofit["final_decision"] in (FinalDecision.FLAG.value, FinalDecision.BLOCK.value)
+    assert decision_nofit["final_decision"] in (FinalDecision.ESCALATE.value, FinalDecision.BLOCK.value)
 
 
 def test_prompt_injection_cannot_override_hard_constraint_failure():

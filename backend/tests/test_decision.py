@@ -39,23 +39,23 @@ class TestDecisionEngine:
         )
         assert result["final_decision"] == "BLOCK"
 
-    def test_ambiguous_flags(self):
-        """Structural pass + AMBIGUOUS → FLAG."""
+    def test_ambiguous_escalates(self):
+        """Structural pass + AMBIGUOUS → ESCALATE (human review required)."""
         result = decide(
             structural_pass=True,
             majority_verdict="ambiguous",
             confidence_score=0.70,
         )
-        assert result["final_decision"] == "FLAG"
+        assert result["final_decision"] == "ESCALATE"
 
-    def test_low_confidence_flags(self):
-        """Confidence below threshold → FLAG."""
+    def test_low_confidence_escalates(self):
+        """Confidence below high threshold → ESCALATE (human review required)."""
         result = decide(
             structural_pass=True,
             majority_verdict="fit",
             confidence_score=0.50,
         )
-        assert result["final_decision"] == "FLAG"
+        assert result["final_decision"] == "ESCALATE"
 
     def test_very_low_confidence_escalates(self):
         """Very low confidence → ESCALATE."""

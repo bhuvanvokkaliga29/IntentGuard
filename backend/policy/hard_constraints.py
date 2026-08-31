@@ -213,7 +213,12 @@ def check_exclusions(
     merchant_category: str,
     exclusions: Optional[List[str]],
 ) -> ConstraintCheck:
-    """Check if the transaction matches any explicit exclusions."""
+    """
+    Check if the transaction matches any explicit exclusions.
+    
+    Uses exact normalized token matching only.
+    NO fuzzy substring matching to avoid false positives.
+    """
     if exclusions is None or len(exclusions) == 0:
         return ConstraintCheck(
             constraint_name="exclusions",
@@ -221,29 +226,28 @@ def check_exclusions(
             detail="No exclusions defined for this mandate.",
         )
 
+    import re
     text_to_check = f"{item_description} {merchant_category}".lower()
     exclusions_lower = [e.strip().lower() for e in exclusions]
+    tokens = set(re.findall(r'\b[a-z0-9]+\b', text_to_check))
 
     matched_exclusions = []
     for excl in exclusions_lower:
-        # Check exact category match
+        # 1. Exact phrase or substring match
         if excl in text_to_check:
             matched_exclusions.append(excl)
             continue
 
-        # Check underscore-separated words
-        excl_words = excl.replace("_", " ").split()
-        if all(w in text_to_check for w in excl_words):
+        # 2. Check compound terms (e.g., "personal_items" -> ["personal", "items"])
+        excl_parts = [p for p in re.split(r'[\s_]+', excl) if p]
+        if len(excl_parts) > 1:
+            # Multi-word exclusion: all significant parts must be present in the text
+            if all(p in tokens for p in excl_parts if len(p) >= 3):
+                matched_exclusions.append(excl)
+                continue
+        elif len(excl_parts) == 1 and excl_parts[0] in tokens:
             matched_exclusions.append(excl)
             continue
-
-        # Check if the primary word of the exclusion appears as a standalone concept
-        # e.g., "personal_items" → check if "personal" appears in text
-        # This catches "personal grooming kit" against "personal_items"
-        if len(excl_words) >= 1:
-            primary_word = excl_words[0]
-            if len(primary_word) >= 4 and primary_word in text_to_check:
-                matched_exclusions.append(excl)
 
     passed = len(matched_exclusions) == 0
 

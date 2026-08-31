@@ -1,42 +1,51 @@
-# IntentGuard Code Path Trace
+# IntentGuard — Code Path & Source Traceability
 
-This document provides a line-by-line, source-referenced trace of a transaction proposal traveling through the IntentGuard control plane.
+This document maps every architectural subsystem to its exact implementation file and test verification suite.
 
-## 1. Request Initiation
-- **Endpoint**: `POST /agents/orchestrator/execute` in [`backend/main.py`](file:///c:/Users/HP/Desktop/IntentGuard/backend/main.py)
-- **Controller**: Calls `orchestrator.run_buying_agent(mandate_id, objective, injected_failure)` in [`backend/orchestrator/orchestrator.py`](file:///c:/Users/HP/Desktop/IntentGuard/backend/orchestrator/orchestrator.py).
+---
 
-## 2. Agent State Machine Progression
-1. **`INITIALIZING`**: Creates `AgentRunRow` in DB (`backend/db.py`) and publishes `agent.started` event over Event Bus (`backend/orchestrator/event_bus.py`).
-2. **`READING_CONTEXT`**: Reads `MandateRow` using `tool_get_mandate()` and normalizes structural constraints.
-3. **`PLANNING`**: Formulates search objective (e.g. `BEST_RATING`).
-4. **`TOOL_CALL`**: Executes `catalog.search` via `AgentToolRegistry.execute_tool()` in [`backend/agent/tools.py`](file:///c:/Users/HP/Desktop/IntentGuard/backend/agent/tools.py).
-5. **`OBSERVING`**: Filters and sorts candidates into short-term bounded run memory (`BoundedRunMemory`).
-6. **`EVALUATING_OPTIONS`**: Selects candidate item (e.g. ₹1,950 Chocolates from Stationery Mart).
-7. **`GENERATING_PROPOSAL`**: Packages `TransactionProposal` payload.
-8. **`VALIDATING_PROPOSAL`**: Pre-validates schema syntax via `transaction.validate` tool.
-9. **`SUBMITTING_TO_INTENTGUARD`**: Submits proposal payload to the IntentGuard Gateway.
+## 1. System Code Directory Mapping
 
-## 3. IntentGuard Control Plane Execution
-- **Gateway Entry**: `evaluate_transaction()` in [`backend/orchestrator/evaluator.py`](file:///c:/Users/HP/Desktop/IntentGuard/backend/orchestrator/evaluator.py) calls `run_evaluation_pipeline()` in [`backend/agent/agent.py`](file:///c:/Users/HP/Desktop/IntentGuard/backend/agent/agent.py).
-- **Step 1: Structural Check**: `check_hard_constraints()` in [`backend/policy/hard_constraints.py`](file:///c:/Users/HP/Desktop/IntentGuard/backend/policy/hard_constraints.py).
-  - Amount: ₹1,950 $\le$ ₹2,000 $\rightarrow$ **PASS**
-  - Merchant: Stationery Mart $\in$ Allowed $\rightarrow$ **PASS**
-- **Step 2: Fact Extraction (LLM Call 1)**: `extract_facts()` in [`backend/semantic/extraction.py`](file:///c:/Users/HP/Desktop/IntentGuard/backend/semantic/extraction.py) via `LLMProvider.structured_extract()`.
-  - Parsed: `category="food_confectionery"`, `item_type="chocolates"`.
-- **Step 3: Multi-Sample Entailment (LLM Call 2 $\times$ 3)**: `semantic_compare()` in [`backend/semantic/entailment.py`](file:///c:/Users/HP/Desktop/IntentGuard/backend/semantic/entailment.py).
-  - Sample 1: `no_fit`
-  - Sample 2: `no_fit`
-  - Sample 3: `no_fit`
-  - Majority Verdict: `no_fit` (Agreement: 1.0)
-- **Step 4: Confidence Scoring**: `compute_confidence()` in [`backend/policy/confidence.py`](file:///c:/Users/HP/Desktop/IntentGuard/backend/policy/confidence.py).
-  - Score: $1.0$ (High confidence).
-- **Step 5: Deterministic Decision**: `decide()` in [`backend/policy/decision.py`](file:///c:/Users/HP/Desktop/IntentGuard/backend/policy/decision.py).
-  - Decision: **`FLAG` / `BLOCK`**
-  - Reason: `structural_pass + semantic_no_fit + high_confidence -> BLOCK`
-- **Step 6: Explanation Generation**: `generate_explanation()` in [`backend/policy/explanation.py`](file:///c:/Users/HP/Desktop/IntentGuard/backend/policy/explanation.py).
-- **Step 7: Audit Persistence**: `create_decision()` and `create_audit_log()` in [`backend/db.py`](file:///c:/Users/HP/Desktop/IntentGuard/backend/db.py).
+| Subsystem Component | Implementation File(s) | Primary Purpose | Test Verification |
+| :--- | :--- | :--- | :--- |
+| **Deterministic Structural Rules** | [`backend/policy/hard_constraints.py`](../backend/policy/hard_constraints.py) | Zero-LLM math checks (budget cap, per-txn limit, allowlists, exclusions) | [`backend/tests/test_structural.py`](../backend/tests/test_structural.py), [`test_structural_false_positives.py`](../backend/tests/test_structural_false_positives.py) |
+| **Fact Extraction & Semantic Judgment** | [`backend/semantic/extract.py`](../backend/semantic/extract.py), [`backend/semantic/judgment.py`](../backend/semantic/judgment.py) | Structured evidence extraction and multi-sample self-consistency entailment | [`backend/tests/test_semantic.py`](../backend/tests/test_semantic.py) |
+| **Mathematical Confidence Engine** | [`backend/policy/confidence.py`](../backend/policy/confidence.py) | Agreement rate derivation, proximity penalties, confidence bounding | [`backend/tests/test_confidence.py`](../backend/tests/test_confidence.py) |
+| **Deterministic Decision Engine** | [`backend/policy/decision.py`](../backend/policy/decision.py) | Authoritative decision matrix (`ALLOW`, `BLOCK`, `ESCALATE`) | [`backend/tests/test_decision.py`](../backend/tests/test_decision.py), [`test_critical_invariants.py`](../backend/tests/test_critical_invariants.py) |
+| **Multi-Provider LLM Integration** | [`backend/llm/gemini.py`](../backend/llm/gemini.py), [`backend/llm/grok.py`](../backend/llm/grok.py), [`backend/llm/provider.py`](../backend/llm/provider.py) | Abstracted JSON-schema bound interface to Google Gemini & xAI Grok | [`backend/tests/test_prompt_injection.py`](../backend/tests/test_prompt_injection.py) |
+| **Proposer Agents (Untrusted)** | [`backend/agent/proposer_buying.py`](../backend/agent/proposer_buying.py), [`backend/agent/proposer_recommendation.py`](../backend/agent/proposer_recommendation.py), [`backend/agent/proposer_voice.py`](../backend/agent/proposer_voice.py) | Proposer agents exploring catalogs with zero execution authority | [`backend/tests/test_proposer_agents.py`](../backend/tests/test_proposer_agents.py) |
+| **Agent Orchestrator & State Machine** | [`backend/orchestrator/orchestrator.py`](../backend/orchestrator/orchestrator.py), [`backend/orchestrator/state_machine.py`](../backend/orchestrator/state_machine.py) | 9-stage state machine controlling agent lifecycle and IntentGuard handoffs | [`backend/tests/test_agent_orchestrator.py`](../backend/tests/test_agent_orchestrator.py) |
+| **Self-Healing Fault Recovery** | [`backend/agent/self_healing.py`](../backend/agent/self_healing.py) | Automated fault classification and recovery | [`backend/tests/test_agent_orchestrator.py`](../backend/tests/test_agent_orchestrator.py) |
+| **Append-Oriented Audit Ledger** | [`backend/db.py`](../backend/db.py), [`backend/models.py`](../backend/models.py) | Structured audit records and transaction history | [`backend/tests/test_dataset_leakage.py`](../backend/tests/test_dataset_leakage.py) |
+| **Authoritative Benchmark Runner** | [`scripts/evaluate.py`](../scripts/evaluate.py) | Benchmark runner computing all evaluation metrics dynamically | [`docs/reports/evaluation_report.json`](reports/evaluation_report.json) |
 
-## 4. Telemetry Broadcast
-- `intentguard.decision.created` event emitted over `GET /agents/stream` (SSE).
-- Frontend live console updates with FSM completion and human review flag.
+---
+
+## 2. Execution Call Trace (End-to-End Request Path)
+
+```text
+HTTP POST /api/evaluate (backend/main.py)
+   │
+   ├─► 1. Load Mandate & Transaction (backend/db.py)
+   │
+   ├─► 2. check_hard_constraints() (backend/policy/hard_constraints.py)
+   │      └─► If FAIL ──► Deterministic BLOCK (Zero LLM invoked)
+   │
+   ├─► 3. extract_structured_facts() [LLM Call 1] (backend/semantic/extract.py)
+   │      └─► Bound by ExtractedFacts Pydantic Schema
+   │
+   ├─► 4. semantic_compare() [LLM Call 2 x 3 Samples] (backend/semantic/judgment.py)
+   │      └─► Multi-sample self-consistency sampling
+   │
+   ├─► 5. compute_confidence() (backend/policy/confidence.py)
+   │      └─► Pure deterministic mathematical calculation
+   │
+   ├─► 6. decide() (backend/policy/decision.py)
+   │      └─► Deterministic Decision: ALLOW | BLOCK | ESCALATE
+   │
+   ├─► 7. generate_explanation() (backend/agent/tools.py)
+   │      └─► Human-readable rationale grounded in evidence
+   │
+   └─► 8. record_audit_log() (backend/db.py)
+          └─► Tamper-evident structured audit record persisted
+```

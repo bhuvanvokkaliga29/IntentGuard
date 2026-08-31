@@ -97,7 +97,7 @@ class TestExclusions:
         assert result.passed is True
 
     def test_exclusion_match(self):
-        result = check_exclusions("personal grooming kit", "stationery", ["personal_items"])
+        result = check_exclusions("personal grooming kit", "stationery", ["personal_grooming"])
         assert result.passed is False
 
 

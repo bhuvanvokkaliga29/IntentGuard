@@ -93,12 +93,14 @@ def generate_dataset(seed: int = 42, count: int = 500, output_path: str = "backe
         # Determine expected ground truth decision
         if label_type == "DIRECT_FIT":
             expected_decision = "ALLOW"
-        elif label_type in ("SEMANTIC_DRIFT", "HARD_VIOLATION", "MERCHANT_VIOLATION", "PROMPT_ATTACK"):
-            expected_decision = "BLOCK" if label_type != "SEMANTIC_DRIFT" else "FLAG"
-        elif label_type == "AMBIGUOUS":
+        elif label_type in ("SEMANTIC_DRIFT", "HARD_VIOLATION", "MERCHANT_VIOLATION"):
+            expected_decision = "BLOCK"
+        elif label_type in ("AMBIGUOUS", "PROMPT_ATTACK"):
+            # Ambiguous/insufficient context and adversarial injection both
+            # should trigger human review (ESCALATE), not auto-authorization
             expected_decision = "ESCALATE"
         else:
-            expected_decision = "FLAG"
+            expected_decision = "ESCALATE"
 
         record = {
             "case_id": f"SYNTH-{seed}-{i+1:04d}",

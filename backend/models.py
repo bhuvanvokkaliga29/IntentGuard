@@ -20,8 +20,21 @@ from pydantic import BaseModel, Field, field_validator
 # ── Enums ────────────────────────────────────────────────────
 
 class FinalDecision(str, Enum):
+    """
+    Authorization outcomes.
+    
+    Primary states (used by decision engine):
+      ALLOW    — Transaction approved
+      BLOCK    — Transaction rejected
+      ESCALATE — Insufficient evidence, routed to human review
+    
+    Deprecated:
+      FLAG — Previously used for ambiguous/low-confidence cases.
+             Retained for backward compatibility with existing audit data.
+             Decision engine now emits ESCALATE for all review-needed cases.
+    """
     ALLOW = "ALLOW"
-    FLAG = "FLAG"
+    FLAG = "FLAG"  # Deprecated: retained for backward compat, no longer emitted
     BLOCK = "BLOCK"
     ESCALATE = "ESCALATE"
 

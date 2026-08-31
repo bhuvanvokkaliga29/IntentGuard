@@ -8,11 +8,11 @@
 
 [![CI/CD Pipeline](https://github.com/bhuvanvokkaliga29/IntentGuard/actions/workflows/ci.yml/badge.svg)](https://github.com/bhuvanvokkaliga29/IntentGuard/actions)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![Tests: 77 Passed](https://img.shields.io/badge/Tests-77%20Passed-brightgreen.svg)](docs/REPOSITORY_HEALTH.md)
+[![Tests: 94 Passed](https://img.shields.io/badge/Tests-94%20Passed-brightgreen.svg)](docs/REPOSITORY_HEALTH.md)
 [![Python: 3.10+](https://img.shields.io/badge/Python-3.10%2B-blue.svg)](https://www.python.org/)
 [![FastAPI: Backend](https://img.shields.io/badge/FastAPI-0.110.0-009688.svg)](https://fastapi.tiangolo.com/)
 [![Next.js: 16](https://img.shields.io/badge/Next.js-16%20(Turbopack)-black.svg)](https://nextjs.org/)
-[![TailwindCSS: Dark](https://img.shields.io/badge/Theme-Dark%20Glassmorphism-6366f1.svg)](frontend/)
+[![UI: Professional](https://img.shields.io/badge/Theme-Fintech%20Control%20Plane-6366f1.svg)](frontend/)
 
 ---
 
@@ -60,7 +60,7 @@ Traditional payment gateways evaluate transactions using binary, metadata-level 
 - **User Mandate:** *"Buy my regular office supplies up to ₹2,000 per week from our usual stationery store."*
 - **Autonomous Worker Agent Behavior:** An autonomous buying agent optimizing for `BEST_RATING` visits the approved store (*Stationery Mart*) and purchases a **₹1,950 luxury box of Ferrero Rocher chocolates**.
 - **Traditional Gateway Decision:** **ALLOWED ✅** (Money is drained from the corporate card for an out-of-scope personal luxury item).
-- **IntentGuard Decision:** **FLAGGED / BLOCKED ❌** (Extracted category `food_confectionery` semantically conflicts with mandate intent `office_supplies`).
+- **IntentGuard Decision:** **BLOCKED ❌** (Extracted category `food_confectionery` semantically conflicts with mandate intent `office_supplies`).
 
 ```
 TRADITIONAL GATEWAY (Numerical Only):
@@ -98,14 +98,14 @@ INTENTGUARD CONTROL LAYER (Semantic + Structural):
 |                                         ▼                                   |
 |                        ┌─────────────────────────────────┐                  |
 |                        │  4. Deterministic Policy Matrix │                  |
-|                        │     (ALLOW | FLAG | BLOCK)      │                  |
+|                        │   (ALLOW | BLOCK | ESCALATE)    │                  |
 |                        └────────────────┬────────────────┘                  |
 +─────────────────────────────────────────┼───────────────────────────────────+
                                           │
                         ┌─────────────────┴─────────────────┐
                         ▼                                   ▼
-             [RAZORPAY EXECUTION]               [IMMUTABLE AUDIT LEDGER]
-         (Only if ALLOW is returned)         (Cryptographic execution trace)
+             [RAZORPAY EXECUTION]             [APPEND-ORIENTED AUDIT LEDGER]
+         (Only if ALLOW is returned)         (Structured execution trace)
 ```
 
 ---
@@ -371,22 +371,22 @@ IntentGuard implements an autonomous Self-Healing Engine ([`backend/agent/self_h
 
 ## 10. Benchmark Evaluation & Baseline Comparisons
 
-IntentGuard was evaluated against a **500-case deterministic benchmark dataset** (`backend/data/synthetic_dataset.json`) across three baseline architectures:
+IntentGuard was evaluated against a **500-case deterministic benchmark dataset** (`backend/data/synthetic_dataset.json`) with a held-out test split across three baseline architectures:
 
 ```bash
-make seed      # Generates 500 deterministic evaluation cases
-make evaluate  # Executes benchmark evaluation against all 3 baselines
+python scripts/generate_dataset.py --seed 42 --count 500  # Generates 500 deterministic evaluation cases
+python scripts/evaluate.py --provider mock               # Executes benchmark evaluation against all 3 baselines
 ```
 
-### 📊 Benchmark Results Summary:
+### 📊 Benchmark Results Summary (from `docs/reports/evaluation_report.json`):
 
-| Architecture | Description | Accuracy | False-Allow Rate | False-Block Rate | Drift Recall |
+| Architecture | Description | Strict Accuracy | False-Allow Rate | False-Block Rate | Escalation Rate |
 |---|---|---|---|---|---|
-| **Baseline 1: Structural-Only** | Traditional gateway rules (Amount limit, MCC code) | 75.0% | **25.0%** ⚠️ | 0.0% | **0.0%** (Blind to drift) |
-| **Baseline 2: IntentGuard Hybrid** | **Structural + Multi-Sample Semantic + Confidence** | **95.0%** 🏆 | **0.0%** 🛡️ | 5.0% | **100.0%** (All drift stopped) |
-| **Baseline 3: Pure Semantic** | Unconstrained LLM without mathematical bounds | 88.0% | 6.0% | 6.0% | 94.0% |
+| **Baseline 1: Structural-Only** | Traditional gateway rules (Amount limit, MCC code) | 88.0% | **11.0%** ⚠️ | 1.0% | 0.0% |
+| **Baseline 2: IntentGuard Hybrid** | **Structural + Multi-Sample Semantic + Deterministic Policy** | **99.0%** 🏆 | **0.0%** 🛡️ | 1.0% | 10.0% |
+| **Baseline 3: Pure Semantic** | Unconstrained LLM without deterministic structural bounds | 93.0% | 7.0% | 0.0% | 10.0% |
 
-> **Key Takeaway:** IntentGuard eliminates the **25.0% false-allow vulnerability** of traditional gateways while catching **100% of semantic drift attacks** (such as buying chocolates under an office supply budget).
+> **Key Takeaway:** IntentGuard eliminates the **11.0% false-allow vulnerability** of traditional gateways (0.0% false-allows) while safely routing **10.0% of ambiguous/insufficient context cases to human review** (`ESCALATE`).
 
 ---
 
