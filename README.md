@@ -114,18 +114,22 @@ INTENTGUARD CONTROL LAYER (Semantic + Structural):
 ### 🗺️ Master Architecture Diagram
 
 <p align="center">
-  <a href="docs/assets/architecture_diagram.png" target="_blank" title="Click to open Full Resolution Image (Interactive Zoom)">
+  <a href="https://raw.githubusercontent.com/bhuvanvokkaliga29/IntentGuard/main/docs/assets/architecture_diagram.png" target="_blank" title="Click to Open Full 4K Image in New Tab (Mouse Wheel / Pinch-to-Zoom)">
     <img src="docs/assets/architecture_diagram.png" alt="IntentGuard Master Architecture Diagram" width="100%" style="border-radius: 10px; border: 1px solid #334155; box-shadow: 0 8px 30px rgba(0,0,0,0.6);" />
   </a>
   <br/>
-  <em>🔍 <b>Interactive Zoom:</b> Click the architecture diagram above to open at full 4K resolution in a new tab for deep inspection.</em>
+  <em>🔍 <b>Interactive Mouse Zoom:</b> Click the architecture diagram above to open the full-resolution image in a new tab and zoom in/out with your mouse wheel or browser zoom.</em>
+  <br/>
+  <em>🌐 <b>Live Web Canvas:</b> You can also explore the interactive mouse-wheel pan & zoom canvas in the web app at <a href="http://localhost:3000/architecture"><code>/architecture</code></a>.</em>
 </p>
 
 > 📄 **Architecture Schema Reference**: The complete node and edge topology is exported and versioned in [`docs/architecture.json`](docs/architecture.json).
 
 ---
 
-### 🧩 Complete End-to-End Zone Architecture
+<details>
+<summary><b>📐 Click to Expand Complete Mermaid Zone Flowchart (Text Specification)</b></summary>
+<br/>
 
 ```mermaid
 flowchart TD
@@ -225,6 +229,8 @@ flowchart TD
     SyntheticDB -->|"Ground Truth Cases"| EvalPipeline
     EvalPipeline --> SyntheticDB
 ```
+
+</details>
 
 ---
 
