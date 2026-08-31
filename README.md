@@ -111,32 +111,119 @@ INTENTGUARD CONTROL LAYER (Semantic + Structural):
 
 ## 4. System Architecture & End-to-End Flow
 
-IntentGuard implements an asynchronous, decoupled, defense-in-depth pipeline connecting the human user, worker agents, the IntentGuard verification core, and the payment gateway:
+### 🗺️ Master Architecture Diagram
 
-```
-[USER / ADMIN]
-      │
-      ▼
-[MANDATE CREATION] ────────► Normalizes natural language into structural boundaries
-      │
-      ▼
-[WORKER AGENT (Proposer)] ──► 11-Stage FSM: Reads context ─► Tools ─► Picks item
-      │
-      ▼ (Submits Proposal)
-[INTENTGUARD GATEWAY (`evaluate_proposal`)] ──► Central Non-Bypassable Boundary
-      │
-      ├─► Step 1: Structural Check (Deterministic amount, budget, MCC allowlist)
-      │     └─► If FAIL ──► Instant BLOCK (Zero LLM cost)
-      │
-      ├─► Step 2: Structured Fact Extraction (LLM Call 1: Extracts item properties)
-      │
-      ├─► Step 3: Multi-Sample Entailment (LLM Call 2 x 3 samples for consensus)
-      │
-      ├─► Step 4: Confidence Scoring (Penalizes ambiguity & boundary proximity)
-      │
-      ├─► Step 5: Deterministic Decision Engine (Pure Python authorization rules)
-      │
-      └─► Step 6: Append-Only Audit Logging & Server-Sent Events (SSE) Telemetry
+<p align="center">
+  <a href="docs/assets/architecture_diagram.png" target="_blank" title="Click to open Full Resolution Image (Interactive Zoom)">
+    <img src="docs/assets/architecture_diagram.png" alt="IntentGuard Master Architecture Diagram" width="100%" style="border-radius: 10px; border: 1px solid #334155; box-shadow: 0 8px 30px rgba(0,0,0,0.6);" />
+  </a>
+  <br/>
+  <em>🔍 <b>Interactive Zoom:</b> Click the architecture diagram above to open at full 4K resolution in a new tab for deep inspection.</em>
+</p>
+
+> 📄 **Architecture Schema Reference**: The complete node and edge topology is exported and versioned in [`docs/architecture.json`](docs/architecture.json).
+
+---
+
+### 🧩 Complete End-to-End Zone Architecture
+
+```mermaid
+flowchart TD
+    %% ─────────────────────────────────────────────────────────────
+    %% STYLES & DEFINITIONS
+    %% ─────────────────────────────────────────────────────────────
+    classDef userLayer fill:#1e1b4b,stroke:#818cf8,stroke-width:2px,color:#fff
+    classDef untrustedZone fill:#31101e,stroke:#f43f5e,stroke-width:2px,stroke-dasharray: 5 5,color:#fff
+    classDef controlPlane fill:#0f291e,stroke:#10b981,stroke-width:3px,color:#fff
+    classDef aiReasoning fill:#172554,stroke:#3b82f6,stroke-width:2px,color:#fff
+    classDef boundaryZone fill:#2d1a04,stroke:#f59e0b,stroke-width:2px,color:#fff
+    classDef obsZone fill:#1e293b,stroke:#94a3b8,stroke-width:2px,color:#fff
+    classDef evalZone fill:#261833,stroke:#a855f7,stroke-width:2px,color:#fff
+
+    %% ── USER INTENT LAYER ──
+    subgraph USER_LAYER ["👤 1. USER INTENT LAYER"]
+        UserClient["User Client<br/><i>(Defines natural-language spending mandates)</i>"]:::userLayer
+    end
+
+    %% ── UNTRUSTED AGENT ZONE ──
+    subgraph UNTRUSTED_AGENTS ["⚠️ 2. UNTRUSTED AGENT ZONE (PROPOSERS)"]
+        BuyingAgent["Buying Agent<br/><i>(Autonomous catalog procurement)</i>"]:::untrustedZone
+        RecommenderAgent["Recommender Agent<br/><i>(Promotional upsells & add-ons)</i>"]:::untrustedZone
+        VoiceAgent["Voice Agent<br/><i>(Spoken request parser)</i>"]:::untrustedZone
+    end
+
+    %% ── INTENTGUARD CONTROL PLANE ──
+    subgraph CONTROL_PLANE ["🛡️ 3. INTENTGUARD CONTROL PLANE (AUTHORIZATION)"]
+        MandateNormalizer["Mandate Normalizer<br/><i>(Converts NL to structured policy)</i>"]:::controlPlane
+        StructuralEngine["Structural Policy Engine<br/><i>(Zero-LLM Hard Limits & MCC Allowlist)</i>"]:::controlPlane
+        SemanticVerifier["Semantic Verifier<br/><i>(Multi-Sample Entailment Reasoning)</i>"]:::controlPlane
+        EvidenceEngine["Evidence Engine<br/><i>(Unifies structural & semantic facts)</i>"]:::controlPlane
+        UncertaintyEngine["Uncertainty Engine<br/><i>(Mathematical confidence scoring)</i>"]:::controlPlane
+        DecisionEngine["Deterministic Decision Engine<br/><i>(Final Authority: ALLOW | FLAG | BLOCK)</i>"]:::controlPlane
+    end
+
+    %% ── AI REASONING SERVICES ──
+    subgraph AI_SERVICES ["🧠 4. AI REASONING SERVICES (SUPPORTING)"]
+        LLMRouter["LLM Router<br/><i>(Multi-Provider Abstraction)</i>"]:::aiReasoning
+        GeminiProvider["Google Gemini 2.5 Flash<br/><i>(Fact extraction & entailment)</i>"]:::aiReasoning
+        GrokProvider["xAI Grok 3 Mini<br/><i>(Cross-verification & validation)</i>"]:::aiReasoning
+    end
+
+    %% ── EXECUTION & REVIEW BOUNDARY ──
+    subgraph BOUNDARY ["🚪 5. EXECUTION & REVIEW BOUNDARY"]
+        ExecutionGateway["Financial Execution Gateway<br/><i>(Razorpay settlement boundary)</i>"]:::boundaryZone
+        HumanReview["Human Review Service<br/><i>(Escalation queue for low confidence)</i>"]:::boundaryZone
+    end
+
+    %% ── OBSERVABILITY & AUDITABILITY ──
+    subgraph OBSERVABILITY ["📜 6. OBSERVABILITY & ACCOUNTABILITY"]
+        AuditLedger[("Immutable Audit Ledger<br/><i>(Tamper-proof SQLite record)</i>")]:::obsZone
+    end
+
+    %% ── OFFLINE BENCHMARK SUBSYSTEM ──
+    subgraph OFFLINE_EVAL ["🧪 7. OFFLINE EVALUATION SUBSYSTEM"]
+        SyntheticDB[("Synthetic Database<br/><i>(500-case canonical benchmark)</i>")]:::evalZone
+        EvalPipeline["Evaluation Pipeline<br/><i>(Baseline 1, 2, 3 benchmark runner)</i>"]:::evalZone
+    end
+
+    %% ─────────────────────────────────────────────────────────────
+    %% CONNECTIONS & FLOW
+    %% ─────────────────────────────────────────────────────────────
+    UserClient -->|"Natural language mandate"| MandateNormalizer
+    MandateNormalizer -->|"Structured Mandate Policy"| StructuralEngine
+    MandateNormalizer -->|"Budget context"| BuyingAgent
+    MandateNormalizer -->|"Context"| RecommenderAgent
+    MandateNormalizer -->|"Context"| VoiceAgent
+
+    BuyingAgent -->|"Transaction Proposal (Untrusted)"| StructuralEngine
+    RecommenderAgent -->|"Transaction Proposal (Untrusted)"| StructuralEngine
+    VoiceAgent -->|"Transaction Proposal (Untrusted)"| StructuralEngine
+
+    StructuralEngine -->|"Hard Constraints Result"| SemanticVerifier
+    StructuralEngine -->|"Structural Evidence"| EvidenceEngine
+    StructuralEngine -->|"Direct FAIL Block"| DecisionEngine
+
+    SemanticVerifier -->|"Reasoning Request"| LLMRouter
+    LLMRouter --> GeminiProvider
+    LLMRouter --> GrokProvider
+    GeminiProvider --> LLMRouter
+    GrokProvider --> LLMRouter
+    LLMRouter -->|"Semantic Evidence (fit/no_fit)"| SemanticVerifier
+
+    SemanticVerifier -->|"Semantic Evidence"| EvidenceEngine
+    EvidenceEngine -->|"Aggregated Evidence"| UncertaintyEngine
+    UncertaintyEngine -->|"Uncertainty State & Score"| DecisionEngine
+
+    DecisionEngine -->|"ALLOW (High Confidence)"| ExecutionGateway
+    DecisionEngine -->|"ESCALATE / FLAG"| HumanReview
+    DecisionEngine -->|"Audit Event"| AuditLedger
+
+    HumanReview -->|"Manual Approval"| ExecutionGateway
+    HumanReview --> AuditLedger
+    ExecutionGateway -->|"Execution Result"| AuditLedger
+
+    SyntheticDB -->|"Ground Truth Cases"| EvalPipeline
+    EvalPipeline --> SyntheticDB
 ```
 
 ---

@@ -1,0 +1,1056 @@
+{
+  "version": "1.0",
+  "diagramId": "6b27123c-db67-4653-84a7-ac323a5b828c",
+  "title": "Architecture Diagram",
+  "nodes": [
+    {
+      "id": "user-client",
+      "type": "frontend",
+      "label": "User Client",
+      "generic_name": "User Interface",
+      "ports": [
+        {
+          "id": "out",
+          "label": "Mandate",
+          "side": "right"
+        },
+        {
+          "id": "in",
+          "label": "Input",
+          "side": "left"
+        }
+      ],
+      "data": {
+        "description": "User interface for defining natural-language spending mandates.",
+        "tech": [
+          "unspecified"
+        ]
+      }
+    },
+    {
+      "id": "buying-agent",
+      "type": "service",
+      "label": "Buying Agent",
+      "generic_name": "Buying Agent",
+      "ports": [
+        {
+          "id": "in",
+          "label": "Mandate",
+          "side": "left"
+        },
+        {
+          "id": "out",
+          "label": "Proposal",
+          "side": "right"
+        }
+      ],
+      "data": {
+        "description": "Autonomous agent that proposes purchases based on user mandates. Untrusted proposer.",
+        "tech": [
+          "unspecified"
+        ]
+      }
+    },
+    {
+      "id": "recommender-agent",
+      "type": "service",
+      "label": "Recommender Agent",
+      "generic_name": "Recommender Agent",
+      "ports": [
+        {
+          "id": "in",
+          "label": "Mandate",
+          "side": "left"
+        },
+        {
+          "id": "out",
+          "label": "Proposal",
+          "side": "right"
+        }
+      ],
+      "data": {
+        "description": "Suggests transactions based on user context and preferences. Untrusted proposer.",
+        "tech": [
+          "unspecified"
+        ]
+      }
+    },
+    {
+      "id": "voice-agent",
+      "type": "service",
+      "label": "Voice Agent",
+      "generic_name": "Voice Agent",
+      "ports": [
+        {
+          "id": "in",
+          "label": "Mandate",
+          "side": "left"
+        },
+        {
+          "id": "out",
+          "label": "Proposal",
+          "side": "right"
+        }
+      ],
+      "data": {
+        "description": "Converts spoken requests into structured transaction proposals. Untrusted proposer.",
+        "tech": [
+          "unspecified"
+        ]
+      }
+    },
+    {
+      "id": "structural-policy-engine",
+      "type": "service",
+      "label": "Structural Policy Engine",
+      "generic_name": "Structural Policy Engine",
+      "ports": [
+        {
+          "id": "in",
+          "label": "Proposal",
+          "side": "left"
+        },
+        {
+          "id": "out",
+          "label": "Structural Result",
+          "side": "right"
+        },
+        {
+          "id": "right-2",
+          "label": "Right 2",
+          "side": "right"
+        },
+        {
+          "id": "left-2",
+          "label": "Left 2",
+          "side": "left"
+        },
+        {
+          "id": "left-3",
+          "label": "Left 3",
+          "side": "left"
+        },
+        {
+          "id": "left-4",
+          "label": "Left 4",
+          "side": "left"
+        },
+        {
+          "id": "right-3",
+          "side": "right",
+          "label": "Right 3"
+        }
+      ],
+      "data": {
+        "description": "Performs deterministic checks on amount, currency, merchant, and category constraints.",
+        "tech": [
+          "unspecified"
+        ]
+      }
+    },
+    {
+      "id": "semantic-verifier",
+      "type": "service",
+      "label": "Semantic Verifier",
+      "generic_name": "Semantic Verifier",
+      "ports": [
+        {
+          "id": "in",
+          "label": "Structural Result",
+          "side": "left"
+        },
+        {
+          "id": "out",
+          "label": "Semantic Evidence",
+          "side": "right"
+        },
+        {
+          "id": "llm",
+          "label": "LLM Reasoning",
+          "side": "top"
+        },
+        {
+          "id": "left-2",
+          "label": "Left 2",
+          "side": "left"
+        },
+        {
+          "id": "right-2",
+          "side": "right",
+          "label": "Right 2"
+        }
+      ],
+      "data": {
+        "description": "Uses LLM reasoning to verify if the transaction purpose aligns with the user's original intent.",
+        "tech": [
+          "unspecified"
+        ]
+      }
+    },
+    {
+      "id": "evidence-engine",
+      "type": "service",
+      "label": "Evidence Engine",
+      "generic_name": "Evidence Engine",
+      "ports": [
+        {
+          "id": "in",
+          "label": "Evidence",
+          "side": "left"
+        },
+        {
+          "id": "out",
+          "label": "Aggregated Evidence",
+          "side": "right"
+        },
+        {
+          "id": "left-2",
+          "label": "Left 2",
+          "side": "left"
+        },
+        {
+          "id": "right-2",
+          "side": "right",
+          "label": "Right 2"
+        }
+      ],
+      "data": {
+        "description": "Assembles structural and semantic evidence into a unified decision context.",
+        "tech": [
+          "unspecified"
+        ]
+      }
+    },
+    {
+      "id": "decision-engine",
+      "type": "service",
+      "label": "Decision Engine",
+      "generic_name": "Decision Engine",
+      "ports": [
+        {
+          "id": "in",
+          "label": "State",
+          "side": "left"
+        },
+        {
+          "id": "allow",
+          "label": "ALLOW",
+          "side": "right"
+        },
+        {
+          "id": "escalate",
+          "label": "ESCALATE",
+          "side": "bottom"
+        },
+        {
+          "id": "audit",
+          "label": "Audit",
+          "side": "top"
+        },
+        {
+          "id": "left-2",
+          "label": "Left 2",
+          "side": "left"
+        },
+        {
+          "id": "left-3",
+          "label": "Left 3",
+          "side": "left"
+        },
+        {
+          "id": "right-2",
+          "label": "Right 2",
+          "side": "right"
+        },
+        {
+          "id": "right-3",
+          "side": "right",
+          "label": "Right 3"
+        }
+      ],
+      "data": {
+        "description": "The final deterministic authority. Produces ALLOW, BLOCK, or ESCALATE decisions.",
+        "tech": [
+          "unspecified"
+        ]
+      }
+    },
+    {
+      "id": "llm-router",
+      "type": "service",
+      "label": "LLM Router",
+      "generic_name": "LLM Router",
+      "ports": [
+        {
+          "id": "in",
+          "label": "Request",
+          "side": "bottom"
+        },
+        {
+          "id": "out",
+          "label": "Provider",
+          "side": "top"
+        },
+        {
+          "id": "in",
+          "label": "Input",
+          "side": "left"
+        },
+        {
+          "id": "out",
+          "label": "Output",
+          "side": "right"
+        },
+        {
+          "id": "left-2",
+          "label": "Left 2",
+          "side": "left"
+        },
+        {
+          "id": "left-3",
+          "label": "Left 3",
+          "side": "left"
+        },
+        {
+          "id": "right-2",
+          "label": "Right 2",
+          "side": "right"
+        },
+        {
+          "id": "right-3",
+          "side": "right",
+          "label": "Right 3"
+        }
+      ],
+      "data": {
+        "description": "Abstractions for multiple LLM providers (Gemini, Grok) to provide semantic evidence.",
+        "tech": [
+          "unspecified"
+        ]
+      }
+    },
+    {
+      "id": "gemini-provider",
+      "type": "service",
+      "label": "Gemini Provider",
+      "generic_name": "Gemini Provider",
+      "ports": [
+        {
+          "id": "in",
+          "label": "In",
+          "side": "bottom"
+        },
+        {
+          "id": "in",
+          "label": "Input",
+          "side": "left"
+        },
+        {
+          "id": "out",
+          "label": "Output",
+          "side": "right"
+        }
+      ],
+      "data": {
+        "description": "Google Gemini 1.5 Pro for semantic intent extraction and comparison.",
+        "tech": [
+          "unspecified"
+        ]
+      }
+    },
+    {
+      "id": "grok-provider",
+      "type": "service",
+      "label": "Grok Provider",
+      "generic_name": "Grok Provider",
+      "ports": [
+        {
+          "id": "in",
+          "label": "In",
+          "side": "bottom"
+        },
+        {
+          "id": "in",
+          "label": "Input",
+          "side": "left"
+        },
+        {
+          "id": "out",
+          "label": "Output",
+          "side": "right"
+        }
+      ],
+      "data": {
+        "description": "xAI Grok-1 for cross-verification and semantic drift detection.",
+        "tech": [
+          "unspecified"
+        ]
+      }
+    },
+    {
+      "id": "audit-ledger",
+      "type": "database",
+      "label": "Audit Ledger",
+      "generic_name": "Audit Ledger",
+      "ports": [
+        {
+          "id": "in",
+          "label": "Event",
+          "side": "bottom"
+        },
+        {
+          "id": "in",
+          "label": "Input",
+          "side": "left"
+        },
+        {
+          "id": "out",
+          "label": "Output",
+          "side": "right"
+        },
+        {
+          "id": "left-2",
+          "label": "Left 2",
+          "side": "left"
+        },
+        {
+          "id": "left-3",
+          "side": "left",
+          "label": "Left 3"
+        }
+      ],
+      "data": {
+        "description": "Immutable record of all transaction proposals, evidence, and authorization decisions.",
+        "tech": [
+          "unspecified"
+        ]
+      }
+    },
+    {
+      "id": "financial-execution-gateway",
+      "type": "service",
+      "label": "Execution Gateway",
+      "generic_name": "Financial Execution Gateway",
+      "ports": [
+        {
+          "id": "in",
+          "label": "Decision",
+          "side": "left"
+        },
+        {
+          "id": "out",
+          "label": "Output",
+          "side": "right"
+        },
+        {
+          "id": "left-2",
+          "side": "left",
+          "label": "Left 2"
+        }
+      ],
+      "data": {
+        "description": "Hard financial boundary. Only executes transactions with a validated ALLOW decision.",
+        "tech": [
+          "unspecified"
+        ]
+      }
+    },
+    {
+      "id": "human-review-service",
+      "type": "service",
+      "label": "Human Review Service",
+      "generic_name": "Human Review Service",
+      "ports": [
+        {
+          "id": "in",
+          "label": "Escalation",
+          "side": "top"
+        },
+        {
+          "id": "in",
+          "label": "Input",
+          "side": "left"
+        },
+        {
+          "id": "out",
+          "label": "Output",
+          "side": "right"
+        },
+        {
+          "id": "right-2",
+          "label": "Right 2",
+          "side": "right"
+        }
+      ],
+      "data": {
+        "description": "Operational interface for reviewing uncertain or conflicting transaction proposals.",
+        "tech": [
+          "unspecified"
+        ]
+      }
+    },
+    {
+      "id": "eval-pipeline",
+      "type": "service",
+      "label": "Evaluation Pipeline",
+      "generic_name": "Evaluation Pipeline",
+      "ports": [
+        {
+          "id": "db",
+          "label": "Data",
+          "side": "bottom"
+        },
+        {
+          "id": "in",
+          "label": "Input",
+          "side": "left"
+        },
+        {
+          "id": "out",
+          "label": "Output",
+          "side": "right"
+        }
+      ],
+      "data": {
+        "description": "Offline subsystem for benchmarking IntentGuard against synthetic datasets and baselines.",
+        "tech": [
+          "unspecified"
+        ]
+      }
+    },
+    {
+      "id": "synthetic-db",
+      "type": "database",
+      "label": "Synthetic Database",
+      "generic_name": "Synthetic Database",
+      "ports": [
+        {
+          "id": "in",
+          "label": "In",
+          "side": "top"
+        },
+        {
+          "id": "in",
+          "label": "Input",
+          "side": "left"
+        },
+        {
+          "id": "out",
+          "label": "Output",
+          "side": "right"
+        }
+      ],
+      "data": {
+        "description": "Canonical test cases for evaluating semantic drift detection and policy enforcement.",
+        "tech": [
+          "unspecified"
+        ]
+      }
+    },
+    {
+      "id": "mandate-normalizer",
+      "type": "service",
+      "label": "Mandate Normalizer",
+      "generic_name": "Mandate Normalizer",
+      "ports": [
+        {
+          "id": "in",
+          "label": "User Intent",
+          "side": "left"
+        },
+        {
+          "id": "out",
+          "label": "Structured Mandate",
+          "side": "right"
+        },
+        {
+          "id": "right-2",
+          "label": "Right 2",
+          "side": "right"
+        },
+        {
+          "id": "right-3",
+          "label": "Right 3",
+          "side": "right"
+        },
+        {
+          "id": "right-4",
+          "side": "right",
+          "label": "Right 4"
+        }
+      ],
+      "data": {
+        "description": "Converts natural-language mandates into structured, versioned authorization policy objects.",
+        "tech": [
+          "unspecified"
+        ]
+      }
+    },
+    {
+      "id": "uncertainty-engine",
+      "type": "service",
+      "label": "Uncertainty Engine",
+      "generic_name": "Uncertainty Engine",
+      "ports": [
+        {
+          "id": "in",
+          "label": "Evidence",
+          "side": "left"
+        },
+        {
+          "id": "out",
+          "label": "Uncertainty State",
+          "side": "right"
+        }
+      ],
+      "data": {
+        "description": "Resolves conflicts between models and assesses overall decision confidence.",
+        "tech": [
+          "unspecified"
+        ]
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "struct-to-decision",
+      "source": {
+        "nodeId": "structural-policy-engine",
+        "portId": "out"
+      },
+      "target": {
+        "nodeId": "decision-engine",
+        "portId": "in"
+      },
+      "type": "internal-api",
+      "label": "Hard Constraints Result"
+    },
+    {
+      "id": "synthetic-to-eval",
+      "source": {
+        "nodeId": "synthetic-db",
+        "portId": "out"
+      },
+      "target": {
+        "nodeId": "eval-pipeline",
+        "portId": "in"
+      },
+      "type": "database",
+      "label": "Ground Truth Data"
+    },
+    {
+      "id": "structural-to-evidence",
+      "source": {
+        "nodeId": "structural-policy-engine",
+        "portId": "right-2"
+      },
+      "target": {
+        "nodeId": "evidence-engine",
+        "portId": "in"
+      },
+      "type": "internal-api",
+      "label": "Structural Evidence"
+    },
+    {
+      "id": "evidence-to-decision",
+      "source": {
+        "nodeId": "evidence-engine",
+        "portId": "out"
+      },
+      "target": {
+        "nodeId": "decision-engine",
+        "portId": "left-2"
+      },
+      "type": "internal-api",
+      "label": null
+    },
+    {
+      "id": "human-review-to-execution",
+      "source": {
+        "nodeId": "human-review-service",
+        "portId": "out"
+      },
+      "target": {
+        "nodeId": "financial-execution-gateway",
+        "portId": "in"
+      },
+      "type": "internal-api",
+      "label": "Manual Approval"
+    },
+    {
+      "id": "execution-to-audit",
+      "source": {
+        "nodeId": "financial-execution-gateway",
+        "portId": "out"
+      },
+      "target": {
+        "nodeId": "audit-ledger",
+        "portId": "in"
+      },
+      "type": "database",
+      "label": "Execution Result"
+    },
+    {
+      "id": "human-to-audit-log",
+      "source": {
+        "nodeId": "human-review-service",
+        "portId": "right-2"
+      },
+      "target": {
+        "nodeId": "audit-ledger",
+        "portId": "left-2"
+      },
+      "type": "database",
+      "label": null
+    },
+    {
+      "id": "normalizer-to-structural",
+      "source": {
+        "nodeId": "mandate-normalizer",
+        "portId": "out"
+      },
+      "target": {
+        "nodeId": "structural-policy-engine",
+        "portId": "in"
+      },
+      "type": "internal-api",
+      "label": "Policy Object"
+    },
+    {
+      "id": "router-to-verifier-res",
+      "source": {
+        "nodeId": "llm-router",
+        "portId": "out"
+      },
+      "target": {
+        "nodeId": "semantic-verifier",
+        "portId": "in"
+      },
+      "type": "grpc",
+      "label": "Semantic Evidence"
+    },
+    {
+      "id": "gemini-to-router-res",
+      "source": {
+        "nodeId": "gemini-provider",
+        "portId": "out"
+      },
+      "target": {
+        "nodeId": "llm-router",
+        "portId": "in"
+      },
+      "type": "http",
+      "label": "Res"
+    },
+    {
+      "id": "grok-to-router-res",
+      "source": {
+        "nodeId": "grok-provider",
+        "portId": "out"
+      },
+      "target": {
+        "nodeId": "llm-router",
+        "portId": "left-2"
+      },
+      "type": "http",
+      "label": "Res"
+    },
+    {
+      "id": "user-to-normalizer",
+      "source": {
+        "nodeId": "user-client",
+        "portId": "out"
+      },
+      "target": {
+        "nodeId": "mandate-normalizer",
+        "portId": "in"
+      },
+      "type": "http",
+      "label": "Natural-language mandate"
+    },
+    {
+      "id": "normalizer-to-buying",
+      "source": {
+        "nodeId": "mandate-normalizer",
+        "portId": "right-2"
+      },
+      "target": {
+        "nodeId": "buying-agent",
+        "portId": "in"
+      },
+      "type": "internal-api",
+      "label": "Structured Mandate"
+    },
+    {
+      "id": "normalizer-to-recommender",
+      "source": {
+        "nodeId": "mandate-normalizer",
+        "portId": "right-3"
+      },
+      "target": {
+        "nodeId": "recommender-agent",
+        "portId": "in"
+      },
+      "type": "internal-api",
+      "label": "Structured Mandate"
+    },
+    {
+      "id": "normalizer-to-voice",
+      "source": {
+        "nodeId": "mandate-normalizer",
+        "portId": "right-4"
+      },
+      "target": {
+        "nodeId": "voice-agent",
+        "portId": "in"
+      },
+      "type": "internal-api",
+      "label": "Structured Mandate"
+    },
+    {
+      "id": "buying-to-intentguard",
+      "source": {
+        "nodeId": "buying-agent",
+        "portId": "out"
+      },
+      "target": {
+        "nodeId": "structural-policy-engine",
+        "portId": "left-2"
+      },
+      "type": "internal-api",
+      "label": "Transaction Proposal"
+    },
+    {
+      "id": "recommender-to-intentguard",
+      "source": {
+        "nodeId": "recommender-agent",
+        "portId": "out"
+      },
+      "target": {
+        "nodeId": "structural-policy-engine",
+        "portId": "left-3"
+      },
+      "type": "internal-api",
+      "label": "Transaction Proposal"
+    },
+    {
+      "id": "voice-to-intentguard",
+      "source": {
+        "nodeId": "voice-agent",
+        "portId": "out"
+      },
+      "target": {
+        "nodeId": "structural-policy-engine",
+        "portId": "left-4"
+      },
+      "type": "internal-api",
+      "label": "Transaction Proposal"
+    },
+    {
+      "id": "structural-to-semantic",
+      "source": {
+        "nodeId": "structural-policy-engine",
+        "portId": "right-3"
+      },
+      "target": {
+        "nodeId": "semantic-verifier",
+        "portId": "left-2"
+      },
+      "type": "internal-api",
+      "label": "Structural Result"
+    },
+    {
+      "id": "semantic-to-llm",
+      "source": {
+        "nodeId": "semantic-verifier",
+        "portId": "out"
+      },
+      "target": {
+        "nodeId": "llm-router",
+        "portId": "left-3"
+      },
+      "type": "internal-api",
+      "label": "Reasoning Request"
+    },
+    {
+      "id": "llm-to-gemini",
+      "source": {
+        "nodeId": "llm-router",
+        "portId": "right-2"
+      },
+      "target": {
+        "nodeId": "gemini-provider",
+        "portId": "in"
+      },
+      "type": "internal-api",
+      "label": null
+    },
+    {
+      "id": "llm-to-grok",
+      "source": {
+        "nodeId": "llm-router",
+        "portId": "right-3"
+      },
+      "target": {
+        "nodeId": "grok-provider",
+        "portId": "in"
+      },
+      "type": "internal-api",
+      "label": null
+    },
+    {
+      "id": "semantic-to-evidence",
+      "source": {
+        "nodeId": "semantic-verifier",
+        "portId": "right-2"
+      },
+      "target": {
+        "nodeId": "evidence-engine",
+        "portId": "left-2"
+      },
+      "type": "internal-api",
+      "label": "Semantic Evidence"
+    },
+    {
+      "id": "evidence-to-uncertainty",
+      "source": {
+        "nodeId": "evidence-engine",
+        "portId": "right-2"
+      },
+      "target": {
+        "nodeId": "uncertainty-engine",
+        "portId": "in"
+      },
+      "type": "internal-api",
+      "label": "Aggregated Evidence"
+    },
+    {
+      "id": "uncertainty-to-decision",
+      "source": {
+        "nodeId": "uncertainty-engine",
+        "portId": "out"
+      },
+      "target": {
+        "nodeId": "decision-engine",
+        "portId": "left-3"
+      },
+      "type": "internal-api",
+      "label": "Uncertainty State"
+    },
+    {
+      "id": "decision-to-execution",
+      "source": {
+        "nodeId": "decision-engine",
+        "portId": "allow"
+      },
+      "target": {
+        "nodeId": "financial-execution-gateway",
+        "portId": "left-2"
+      },
+      "type": "internal-api",
+      "label": "ALLOW"
+    },
+    {
+      "id": "decision-to-human",
+      "source": {
+        "nodeId": "decision-engine",
+        "portId": "right-2"
+      },
+      "target": {
+        "nodeId": "human-review-service",
+        "portId": "in"
+      },
+      "type": "internal-api",
+      "label": "ESCALATE"
+    },
+    {
+      "id": "decision-to-audit",
+      "source": {
+        "nodeId": "decision-engine",
+        "portId": "right-3"
+      },
+      "target": {
+        "nodeId": "audit-ledger",
+        "portId": "left-3"
+      },
+      "type": "database",
+      "label": "Audit Event"
+    },
+    {
+      "id": "eval-to-db",
+      "source": {
+        "nodeId": "eval-pipeline",
+        "portId": "out"
+      },
+      "target": {
+        "nodeId": "synthetic-db",
+        "portId": "in"
+      },
+      "type": "database",
+      "label": null
+    }
+  ],
+  "groups": [
+    {
+      "children": [
+        "buying-agent",
+        "recommender-agent",
+        "voice-agent"
+      ],
+      "id": "untrusted-agents-zone",
+      "label": "UNTRUSTED AGENT ZONE (PROPOSERS)"
+    },
+    {
+      "children": [
+        "mandate-normalizer",
+        "structural-policy-engine",
+        "semantic-verifier",
+        "evidence-engine",
+        "uncertainty-engine",
+        "decision-engine"
+      ],
+      "id": "intentguard-control-plane-zone",
+      "label": "INTENTGUARD CONTROL PLANE (AUTHORIZATION)"
+    },
+    {
+      "children": [
+        "llm-router",
+        "gemini-provider",
+        "grok-provider"
+      ],
+      "id": "ai-reasoning-zone",
+      "label": "AI REASONING SERVICES (SUPPORTING)"
+    },
+    {
+      "children": [
+        "financial-execution-gateway",
+        "human-review-service"
+      ],
+      "id": "execution-boundary-zone",
+      "label": "EXECUTION & REVIEW BOUNDARY"
+    },
+    {
+      "children": [
+        "audit-ledger"
+      ],
+      "id": "observability-zone",
+      "label": "OBSERVABILITY & ACCOUNTABILITY"
+    },
+    {
+      "children": [
+        "eval-pipeline",
+        "synthetic-db"
+      ],
+      "id": "evaluation-subsystem-zone",
+      "label": "OFFLINE EVALUATION SUBSYSTEM"
+    },
+    {
+      "children": [
+        "user-client"
+      ],
+      "id": "user-intent-zone",
+      "label": "USER INTENT LAYER"
+    }
+  ],
+  "metadata": {}
+}
