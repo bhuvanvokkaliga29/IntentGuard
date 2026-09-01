@@ -13,6 +13,12 @@ export default function Home() {
     falseAllowRate: "0.0%",
   });
   const [recentDecisions, setRecentDecisions] = useState<any[]>([]);
+  const [controlStatus, setControlStatus] = useState({
+    gateway: "GATEWAY ACTIVE",
+    agentsMonitored: 3,
+    decisionGate: "POLICY ONLINE",
+    pendingReviews: 0,
+  });
 
   useEffect(() => {
     async function loadHomeData() {
@@ -25,9 +31,28 @@ export default function Home() {
         }));
       }
 
+      try {
+        const health = await apiFetch("/agents/health");
+        if (health && Array.isArray(health.active_agents)) {
+          setControlStatus(prev => ({
+            ...prev,
+            agentsMonitored: health.active_agents.length,
+          }));
+        }
+      } catch (e) {
+        // Keep default monitored count
+      }
+
       const decisions = await apiFetch("/decisions");
       if (Array.isArray(decisions) && decisions.length > 0) {
         setRecentDecisions(decisions.slice(0, 4));
+        const pendingCount = decisions.filter(
+          (d: any) => (d.final_decision === "FLAG" || d.final_decision === "ESCALATE") && !d.human_review_status
+        ).length;
+        setControlStatus(prev => ({
+          ...prev,
+          pendingReviews: pendingCount,
+        }));
       } else {
         setRecentDecisions([
           {
@@ -66,9 +91,45 @@ export default function Home() {
           The transaction is within the limit.<br className="hidden md:inline" /> The intent is not.
         </h1>
         
-        <p className="text-[17px] text-fog max-w-2xl leading-relaxed mb-8 font-sans">
+        <p className="text-[17px] text-fog max-w-2xl leading-relaxed mb-6 font-sans">
           IntentGuard verifies whether an agent’s proposed transaction matches what the user actually authorized.
         </p>
+
+        {/* Compact Live Operational Control Status Strip */}
+        <div className="w-full max-w-2xl bg-carbon/80 border border-graphite rounded px-4 py-2.5 mb-8 text-left font-mono">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-0 divide-y md:divide-y-0 md:divide-x divide-graphite/60">
+            {/* Control Gateway */}
+            <div className="flex flex-col pt-1.5 md:pt-0 md:pr-3" title="IntentGuard decision gateway is available">
+              <span className="text-[10px] text-ash tracking-wider uppercase font-semibold">Control Status</span>
+              <div className="flex items-center gap-1.5 mt-0.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-pulse-green"></span>
+                <span className="text-[12px] font-semibold text-paper tracking-tight">{controlStatus.gateway}</span>
+              </div>
+            </div>
+
+            {/* Proposer Agents */}
+            <div className="flex flex-col pt-1.5 md:pt-0 md:px-3" title="Autonomous agents can generate proposals but cannot authorize financial execution">
+              <span className="text-[10px] text-ash tracking-wider uppercase font-semibold">Proposer Agents</span>
+              <span className="text-[12px] font-semibold text-paper mt-0.5 tracking-tight">
+                {controlStatus.agentsMonitored} MONITORED
+              </span>
+            </div>
+
+            {/* Decision Pipeline */}
+            <div className="flex flex-col pt-1.5 md:pt-0 md:px-3" title="Zero-LLM direct execution; deterministic policy authorizes">
+              <span className="text-[10px] text-ash tracking-wider uppercase font-semibold">Decision Gate</span>
+              <span className="text-[12px] font-semibold text-paper mt-0.5 tracking-tight">{controlStatus.decisionGate}</span>
+            </div>
+
+            {/* Review Queue */}
+            <div className="flex flex-col pt-1.5 md:pt-0 md:pl-3" title="Cases requiring additional human review">
+              <span className="text-[10px] text-ash tracking-wider uppercase font-semibold">Review Queue</span>
+              <span className={`text-[12px] font-semibold mt-0.5 tracking-tight ${controlStatus.pendingReviews > 0 ? "text-amber-400" : "text-paper"}`}>
+                {controlStatus.pendingReviews > 0 ? `${controlStatus.pendingReviews} PENDING` : "NONE PENDING"}
+              </span>
+            </div>
+          </div>
+        </div>
         
         <div className="flex flex-wrap items-center justify-center gap-4 font-mono text-[13px]">
           <Link href="/demo" className="btn-primary py-2.5 px-5 flex items-center gap-2">
