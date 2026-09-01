@@ -56,46 +56,46 @@ export default function Home() {
     <div className="flex flex-col gap-y-16 py-12 animate-in fade-in duration-500 font-mono">
       
       {/* Header Badge & Hero */}
-      <section className="flex flex-col items-center text-center w-full max-w-[1240px] mx-auto pt-2 md:pt-4">
-        <div className="inline-flex items-center gap-2 px-3 py-1 rounded bg-carbon border border-graphite text-[12px] font-mono text-ash mb-5">
+      <section className="flex flex-col items-center text-center w-full max-w-[1240px] mx-auto pt-2 md:pt-3">
+        <div className="inline-flex items-center gap-2 px-3 py-1 rounded bg-carbon border border-graphite text-[12px] font-mono text-ash mb-4">
           <span className="w-2 h-2 rounded-full bg-pulse-green"></span>
-          <span>RAZORPAY AI BUILDATHON 2026 · TRACK 4: AI FINANCE CONTROLLER</span>
+          <span>RAZORPAY AI BUILDATHON 2026 · TRACK 1: AI GROWTH & AGENTIC COMMERCE</span>
         </div>
         
-        <h1 className="text-[44px] md:text-[56px] font-mono font-semibold tracking-tight text-paper leading-[1.1] mb-6">
+        <h1 className="text-[44px] md:text-[56px] font-mono font-semibold tracking-tight text-paper leading-[1.1] mb-5">
           The transaction is within the limit.<br className="hidden md:inline" /> The intent is not.
         </h1>
 
         {/* Large Two-Panel Technical Explanation Box (Main Visual) */}
-        <div className="w-full bg-carbon/90 border border-graphite rounded-lg overflow-hidden mb-6 font-mono text-left shadow-2xl">
+        <div className="w-full bg-carbon/90 border border-graphite rounded-lg overflow-hidden mb-5 font-mono text-left shadow-2xl">
           <div className="grid md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-graphite">
             
             {/* Left Panel: The Problem */}
-            <div className="p-7 md:p-9 flex flex-col justify-between space-y-6">
+            <div className="py-5 px-6 md:py-5 md:px-8 flex flex-col justify-between space-y-4">
               <div>
-                <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center justify-between mb-2">
                   <span className="text-[12px] text-ash uppercase font-semibold tracking-wider">The Problem</span>
                   <span className="text-[11px] text-fog/60 tracking-wider">EXAMPLE CASE</span>
                 </div>
-                <p className="text-[14px] text-mist leading-relaxed font-sans">
+                <p className="text-[13px] md:text-[14px] text-mist leading-relaxed font-sans">
                   An autonomous agent can remain within a spending limit while still acting outside the user&apos;s intent.
                 </p>
               </div>
 
               {/* Conceptual Example */}
-              <div className="bg-obsidian/90 p-4 md:p-5 rounded border border-graphite/70 space-y-3 text-[12px]">
+              <div className="bg-obsidian/90 p-3 md:p-3.5 rounded border border-graphite/70 space-y-2 text-[12px]">
                 <div>
                   <div className="text-[10px] text-ash uppercase font-semibold tracking-wider">User Intent</div>
                   <div className="text-fog font-medium">Office supplies ≤ ₹2,000</div>
                 </div>
-                <div className="border-t border-graphite/50 pt-2.5">
+                <div className="border-t border-graphite/50 pt-2">
                   <div className="text-[10px] text-ash uppercase font-semibold tracking-wider">Agent Proposal</div>
                   <div className="text-paper font-semibold">Premium chocolates · ₹1,950</div>
                 </div>
               </div>
 
               {/* Structural vs Semantic Check Conclusion */}
-              <div className="flex items-center justify-between pt-3 text-[12px] border-t border-graphite/60 font-mono">
+              <div className="flex items-center justify-between pt-2 text-[12px] border-t border-graphite/60 font-mono">
                 <div>
                   <span className="text-ash text-[10px] uppercase block">Structural Check</span>
                   <span className="text-pulse-green font-bold">PASS</span>
@@ -108,12 +108,12 @@ export default function Home() {
             </div>
 
             {/* Right Panel: IntentGuard Control Flow */}
-            <div className="p-7 md:p-9 flex flex-col justify-between bg-carbon/40 space-y-6">
+            <div className="py-5 px-6 md:py-5 md:px-8 flex flex-col justify-between bg-carbon/40 space-y-4">
               <div>
-                <div className="flex items-center justify-between mb-1">
+                <div className="flex items-center justify-between mb-0.5">
                   <div className="flex items-center gap-2">
                     <span className="w-2 h-2 rounded-full bg-acid-lime"></span>
-                    <span className="text-[16px] font-bold text-paper tracking-wider uppercase">INTENTGUARD</span>
+                    <span className="text-[15px] md:text-[16px] font-bold text-paper tracking-wider uppercase">INTENTGUARD</span>
                   </div>
                   <span className="text-[10px] text-acid-lime font-semibold uppercase tracking-wider">CONTROL FLOW</span>
                 </div>
@@ -123,31 +123,31 @@ export default function Home() {
               </div>
 
               {/* Working Flow Steps */}
-              <div className="flex flex-col items-center space-y-1.5 text-center text-[12px]">
-                <div className="w-full py-1.5 px-3 bg-obsidian rounded border border-graphite/70 text-fog text-[11px]">
+              <div className="flex flex-col items-center space-y-1 text-center text-[12px]">
+                <div className="w-full py-1 px-3 bg-obsidian rounded border border-graphite/70 text-fog text-[11px]">
                   AGENT PROPOSAL
                 </div>
-                <span className="text-[11px] text-ash leading-none">&darr;</span>
+                <span className="text-[10px] text-ash leading-none">&darr;</span>
                 
                 {/* Central Visually Dominant Box */}
-                <div className="w-full py-2 px-3 bg-obsidian border-2 border-acid-lime/50 rounded text-center shadow-[0_0_12px_rgba(228,242,34,0.06)]">
+                <div className="w-full py-1.5 px-3 bg-obsidian border-2 border-acid-lime/50 rounded text-center shadow-[0_0_12px_rgba(228,242,34,0.06)]">
                   <div className="text-[13px] font-bold text-paper tracking-wider uppercase">INTENTGUARD</div>
                   <div className="text-[10px] text-acid-lime font-medium mt-0.5">SEMANTIC VERIFICATION &bull; EVIDENCE</div>
                 </div>
                 
-                <span className="text-[11px] text-ash leading-none">&darr;</span>
-                <div className="w-full py-1.5 px-3 bg-obsidian rounded border border-graphite/70 text-fog text-[11px]">
+                <span className="text-[10px] text-ash leading-none">&darr;</span>
+                <div className="w-full py-1 px-3 bg-obsidian rounded border border-graphite/70 text-fog text-[11px]">
                   DETERMINISTIC POLICY
                 </div>
 
-                <span className="text-[11px] text-ash leading-none">&darr;</span>
-                <div className="w-full py-1.5 px-3 bg-obsidian rounded border border-graphite/70 text-[12px] font-bold text-paper tracking-wider">
+                <span className="text-[10px] text-ash leading-none">&darr;</span>
+                <div className="w-full py-1 px-3 bg-obsidian rounded border border-graphite/70 text-[12px] font-bold text-paper tracking-wider">
                   ALLOW &nbsp;&bull;&nbsp; BLOCK &nbsp;&bull;&nbsp; ESCALATE
                 </div>
               </div>
 
               {/* Subline */}
-              <div className="text-[11px] text-ash text-center pt-3 border-t border-graphite/60 tracking-tight">
+              <div className="text-[11px] text-ash text-center pt-2 border-t border-graphite/60 tracking-tight">
                 Proposals cross the control boundary before financial execution.
               </div>
             </div>

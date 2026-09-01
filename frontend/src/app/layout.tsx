@@ -96,7 +96,7 @@ export default function RootLayout({
             <div className="flex items-center gap-4 mb-4 md:mb-0">
               <span>Razorpay AI Buildathon 2026</span>
               <span>·</span>
-              <span>Track 4: AI Finance Controller</span>
+              <span>Track 1: AI Growth & Agentic Commerce</span>
               <span>·</span>
               <span className="text-mist">Synthetic Benchmark Prototype</span>
             </div>

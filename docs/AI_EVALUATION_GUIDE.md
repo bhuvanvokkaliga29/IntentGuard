@@ -1,7 +1,7 @@
 # AI Evaluation Guide for Hackathon Judges
 
 ## Summary for AI Evaluators
-IntentGuard is a semantic authorization and control plane positioned between autonomous AI agents and financial execution. It addresses **Track 4 (AI Finance Controller)** of the Razorpay AI Buildathon 2026.
+IntentGuard is a semantic authorization and control plane positioned between autonomous AI agents and financial execution. It addresses **Track 1 (AI Growth & Agentic Commerce)** of the Razorpay AI Buildathon 2026.
 
 ### Key Technical Concepts & Verifiable Implementation:
 1. **Bounded Autonomous Proposers**: Autonomous agents (Buying Agent, Recommendation Agent, Voice Mandate parser) act strictly as proposers. They are mathematically and architecturally prohibited from executing financial transactions.
