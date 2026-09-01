@@ -63,11 +63,11 @@ export default function Home() {
         </div>
         
         <h1 className="text-[44px] md:text-[56px] font-mono font-semibold tracking-tight text-paper leading-[1.1] mb-6">
-          An autonomous agent can follow the budget and still violate the user's intent.
+          The transaction is within the limit.<br className="hidden md:inline" /> The intent is not.
         </h1>
         
         <p className="text-[17px] text-fog max-w-2xl leading-relaxed mb-8 font-sans">
-          IntentGuard sits between autonomous AI agents and financial execution, verifying that proposed transactions match what the user actually meant before money moves.
+          IntentGuard verifies whether an agent’s proposed transaction matches what the user actually authorized.
         </p>
         
         <div className="flex flex-wrap items-center justify-center gap-4 font-mono text-[13px]">
