@@ -1,7 +1,7 @@
 # IntentGuard — Final Engineering Hardening & Validation Report
 
 **Date:** August 31, 2026  
-**Buildathon Track:** Track 1 — AI Growth & Agentic Commerce  
+**Buildathon Track:** Track 5 — Open Track  
 **Repository:** `bhuvanvokkaliga29/IntentGuard`  
 **Test Suite:** 100% Passing (101 automated tests)  
 **Authoritative Benchmark:** [`docs/reports/evaluation_report.json`](reports/evaluation_report.json)

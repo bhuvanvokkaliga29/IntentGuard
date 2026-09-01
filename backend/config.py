@@ -50,6 +50,7 @@ class Settings(BaseSettings):
     # ── API ───────────────────────────────────────────────────
     api_host: str = Field(default="0.0.0.0")
     api_port: int = Field(default=8000)
+    submission_track: str = Field(default="Track 5 — Open Track", description="Hackathon submission track")
 
     # ── Confidence Thresholds ─────────────────────────────────
     confidence_threshold_high: float = Field(

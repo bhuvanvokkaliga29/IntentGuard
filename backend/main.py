@@ -221,9 +221,11 @@ class HumanReviewRequest(BaseModel):
 @app.get("/")
 async def root():
     """Root landing endpoint providing service metadata and navigation links."""
+    settings = get_settings()
     return {
         "service": "IntentGuard API",
         "description": "Semantic Authorization & Control Layer for Autonomous Financial AI Agents",
+        "track": settings.submission_track,
         "version": "1.0.0",
         "status": "online",
         "documentation": "http://localhost:8000/docs",

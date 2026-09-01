@@ -1,8 +1,8 @@
 # 🛡️ IntentGuard
 
 > ### **Semantic Authorization & Real-Time Control Layer for Autonomous Financial AI Agents**
-> **Built for the Razorpay AI Buildathon 2026**
-> *Eliminating Semantic Financial Drift in Autonomous Delegated Agent Workflows.*
+> **Razorpay AI Buildathon 2026 · Track 5 — Open Track**
+> *Control infrastructure for autonomous financial agents: verifying that agent proposals remain within authorized spending scope before financial execution.*
 
 ---
 

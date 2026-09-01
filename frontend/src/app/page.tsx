@@ -59,7 +59,7 @@ export default function Home() {
       <section className="flex flex-col items-center text-center w-full max-w-[1240px] mx-auto pt-2 md:pt-3">
         <div className="inline-flex items-center gap-2 px-3 py-1 rounded bg-carbon border border-graphite text-[12px] font-mono text-ash mb-4">
           <span className="w-2 h-2 rounded-full bg-pulse-green"></span>
-          <span>RAZORPAY AI BUILDATHON 2026 · TRACK 1: AI GROWTH & AGENTIC COMMERCE</span>
+          <span>RAZORPAY AI BUILDATHON 2026 · TRACK 5: OPEN TRACK</span>
         </div>
         
         <h1 className="text-[44px] md:text-[56px] font-mono font-semibold tracking-tight text-paper leading-[1.1] mb-5">

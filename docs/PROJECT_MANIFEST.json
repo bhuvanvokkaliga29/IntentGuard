@@ -1,7 +1,7 @@
 {
     "project_name": "IntentGuard",
     "tagline": "Within the limit isn't enough. Verify the intent.",
-    "track": "Track 1 — AI Growth & Agentic Commerce",
+    "track": "Track 5 — Open Track",
     "stack": [
         "FastAPI",
         "Python",
