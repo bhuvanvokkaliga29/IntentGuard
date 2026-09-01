@@ -13,12 +13,6 @@ export default function Home() {
     falseAllowRate: "0.0%",
   });
   const [recentDecisions, setRecentDecisions] = useState<any[]>([]);
-  const [controlStatus, setControlStatus] = useState({
-    gateway: "GATEWAY ACTIVE",
-    agentsMonitored: 3,
-    decisionGate: "POLICY ONLINE",
-    pendingReviews: 0,
-  });
 
   useEffect(() => {
     async function loadHomeData() {
@@ -31,28 +25,9 @@ export default function Home() {
         }));
       }
 
-      try {
-        const health = await apiFetch("/agents/health");
-        if (health && Array.isArray(health.active_agents)) {
-          setControlStatus(prev => ({
-            ...prev,
-            agentsMonitored: health.active_agents.length,
-          }));
-        }
-      } catch (e) {
-        // Keep default monitored count
-      }
-
       const decisions = await apiFetch("/decisions");
       if (Array.isArray(decisions) && decisions.length > 0) {
         setRecentDecisions(decisions.slice(0, 4));
-        const pendingCount = decisions.filter(
-          (d: any) => (d.final_decision === "FLAG" || d.final_decision === "ESCALATE") && !d.human_review_status
-        ).length;
-        setControlStatus(prev => ({
-          ...prev,
-          pendingReviews: pendingCount,
-        }));
       } else {
         setRecentDecisions([
           {
@@ -95,39 +70,52 @@ export default function Home() {
           IntentGuard verifies whether an agent’s proposed transaction matches what the user actually authorized.
         </p>
 
-        {/* Compact Live Operational Control Status Strip */}
-        <div className="w-full max-w-2xl bg-carbon/80 border border-graphite rounded px-4 py-2.5 mb-8 text-left font-mono">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-0 divide-y md:divide-y-0 md:divide-x divide-graphite/60">
-            {/* Control Gateway */}
-            <div className="flex flex-col pt-1.5 md:pt-0 md:pr-3" title="IntentGuard decision gateway is available">
-              <span className="text-[10px] text-ash tracking-wider uppercase font-semibold">Control Status</span>
-              <div className="flex items-center gap-1.5 mt-0.5">
-                <span className="w-1.5 h-1.5 rounded-full bg-pulse-green"></span>
-                <span className="text-[12px] font-semibold text-paper tracking-tight">{controlStatus.gateway}</span>
+        {/* Architectural Control Bridge Visual */}
+        <div className="w-full max-w-2xl mb-8 font-mono">
+          <div className="flex flex-col md:flex-row items-center justify-between gap-3 md:gap-0 bg-carbon/80 border border-graphite rounded-lg px-4 py-3 text-center">
+            {/* Stage 1: Autonomous Agents */}
+            <div className="flex flex-col items-center md:items-start md:pl-1">
+              <span className="text-[10px] text-ash tracking-wider uppercase font-semibold">Autonomous Agents</span>
+              <span className="text-[12px] text-fog font-medium mt-0.5">Buying · Recommend · Voice</span>
+            </div>
+
+            {/* Connector 1: Propose */}
+            <div className="flex md:flex-col items-center justify-center gap-0.5 text-ash my-0.5 md:my-0 md:px-2">
+              <span className="text-[9px] tracking-widest uppercase font-semibold text-fog/70">PROPOSE</span>
+              <span className="text-[11px] text-ash rotate-90 md:rotate-0">&rarr;</span>
+            </div>
+
+            {/* Stage 2: IntentGuard Central Bridge (Visually Emphasized) */}
+            <Link 
+              href="/demo"
+              className="group flex flex-col items-center px-4 py-1.5 bg-obsidian border border-acid-lime/40 rounded shadow-[0_0_10px_rgba(228,242,34,0.05)] hover:border-acid-lime/70 transition-colors"
+              title="IntentGuard verifies and controls every proposed transaction"
+            >
+              <div className="flex items-center gap-1.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-acid-lime"></span>
+                <span className="text-[12px] font-bold text-paper tracking-wider uppercase">INTENTGUARD</span>
               </div>
-            </div>
-
-            {/* Proposer Agents */}
-            <div className="flex flex-col pt-1.5 md:pt-0 md:px-3" title="Autonomous agents can generate proposals but cannot authorize financial execution">
-              <span className="text-[10px] text-ash tracking-wider uppercase font-semibold">Proposer Agents</span>
-              <span className="text-[12px] font-semibold text-paper mt-0.5 tracking-tight">
-                {controlStatus.agentsMonitored} MONITORED
+              <span className="text-[10px] text-acid-lime/90 font-medium tracking-tight mt-0.5">
+                VERIFY · CONTROL
               </span>
+            </Link>
+
+            {/* Connector 2: Authorized Only */}
+            <div className="flex md:flex-col items-center justify-center gap-0.5 text-ash my-0.5 md:my-0 md:px-2">
+              <span className="text-[9px] tracking-widest uppercase font-semibold text-fog/70">AUTHORIZED ONLY</span>
+              <span className="text-[11px] text-ash rotate-90 md:rotate-0">&rarr;</span>
             </div>
 
-            {/* Decision Pipeline */}
-            <div className="flex flex-col pt-1.5 md:pt-0 md:px-3" title="Zero-LLM direct execution; deterministic policy authorizes">
-              <span className="text-[10px] text-ash tracking-wider uppercase font-semibold">Decision Gate</span>
-              <span className="text-[12px] font-semibold text-paper mt-0.5 tracking-tight">{controlStatus.decisionGate}</span>
+            {/* Stage 3: Financial Execution */}
+            <div className="flex flex-col items-center md:items-end md:pr-1">
+              <span className="text-[10px] text-ash tracking-wider uppercase font-semibold">Downstream</span>
+              <span className="text-[12px] text-fog font-medium mt-0.5">Financial Execution</span>
             </div>
+          </div>
 
-            {/* Review Queue */}
-            <div className="flex flex-col pt-1.5 md:pt-0 md:pl-3" title="Cases requiring additional human review">
-              <span className="text-[10px] text-ash tracking-wider uppercase font-semibold">Review Queue</span>
-              <span className={`text-[12px] font-semibold mt-0.5 tracking-tight ${controlStatus.pendingReviews > 0 ? "text-amber-400" : "text-paper"}`}>
-                {controlStatus.pendingReviews > 0 ? `${controlStatus.pendingReviews} PENDING` : "NONE PENDING"}
-              </span>
-            </div>
+          {/* Conceptual subline */}
+          <div className="text-[11px] text-ash/80 font-mono mt-2 text-center tracking-tight">
+            Proposals cross this control boundary before financial execution.
           </div>
         </div>
         
