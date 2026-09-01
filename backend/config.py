@@ -98,12 +98,46 @@ class Settings(BaseSettings):
 # Singleton
 _settings: Optional[Settings] = None
 
+def fetch_aws_secrets(secret_name: str, region_name: str = "us-east-1") -> dict:
+    """Fetch secrets from AWS Secrets Manager."""
+    try:
+        import boto3
+        import json
+        from botocore.exceptions import ClientError
+        
+        session = boto3.session.Session()
+        client = session.client(
+            service_name='secretsmanager',
+            region_name=region_name
+        )
+        get_secret_value_response = client.get_secret_value(SecretId=secret_name)
+        if 'SecretString' in get_secret_value_response:
+            return json.loads(get_secret_value_response['SecretString'])
+        return {}
+    except ImportError:
+        return {}
+    except Exception as e:
+        print(f"Failed to fetch secrets from AWS: {e}")
+        return {}
 
 def get_settings() -> Settings:
     """Get or create the application settings singleton."""
     global _settings
     if _settings is None:
         _settings = Settings()
+        
+        # Override with AWS Secrets if enabled
+        if os.environ.get("AWS_SECRETS_MANAGER_ENABLED", "false").lower() == "true":
+            secret_name = os.environ.get("AWS_SECRET_NAME", "intentguard-secrets")
+            aws_secrets = fetch_aws_secrets(secret_name)
+            
+            if "GEMINI_API_KEY" in aws_secrets:
+                _settings.gemini_api_key = aws_secrets["GEMINI_API_KEY"]
+            if "XAI_API_KEY" in aws_secrets:
+                _settings.xai_api_key = aws_secrets["XAI_API_KEY"]
+            if "DATABASE_URL" in aws_secrets:
+                _settings.database_url = aws_secrets["DATABASE_URL"]
+                
     return _settings
 
 

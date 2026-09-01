@@ -110,6 +110,22 @@ class AuditLogRow(Base):
     timestamp: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc))
 
 
+class AsyncTaskRow(Base):
+    __tablename__ = "async_tasks"
+
+    task_id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    status: Mapped[str] = mapped_column(String(20), nullable=False)
+    transaction_id: Mapped[str] = mapped_column(String(36), nullable=False)
+    mandate_id: Mapped[Optional[str]] = mapped_column(String(36), nullable=True)
+    proposer_agent_type: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
+    objective: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
+    result: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    error: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    started_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+    completed_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc))
+
+
 class EvaluationRunRow(Base):
     __tablename__ = "evaluation_runs"
 

@@ -13,6 +13,7 @@ import pytest
 from backend.logging_config import configure_logging, correlation_id_ctx
 from backend.metrics import metrics
 from backend.tasks import submit_async_evaluation, get_task_status, TaskStatus
+from backend.db import init_db
 
 
 def test_structured_json_logging_output(capsys):
@@ -61,6 +62,7 @@ def test_prometheus_metrics_generation():
 @pytest.mark.asyncio
 async def test_async_task_submission_and_tracking():
     """Verify non-blocking async task dispatch and status retrieval."""
+    await init_db()
     task_res = await submit_async_evaluation(
         transaction_id="test-txn-id-001",
         mandate_id="test-mandate-id-001",
@@ -73,6 +75,6 @@ async def test_async_task_submission_and_tracking():
     assert task_res["poll_url"].startswith("/tasks/")
 
     # Verify task status lookup
-    status = get_task_status(task_res["task_id"])
+    status = await get_task_status(task_res["task_id"])
     assert status is not None
     assert status["transaction_id"] == "test-txn-id-001"

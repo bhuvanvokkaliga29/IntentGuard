@@ -320,7 +320,7 @@ async def submit_async_task(req: AsyncTaskSubmitRequest):
 @app.get("/tasks/{task_id}")
 async def get_async_task_status(task_id: str):
     """Poll the status and result of an asynchronous task."""
-    task = get_task_status(task_id)
+    task = await get_task_status(task_id)
     if not task:
         raise HTTPException(status_code=404, detail="Task ID not found")
     return task
