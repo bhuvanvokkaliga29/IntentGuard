@@ -20,7 +20,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import StreamingResponse
+from fastapi.responses import StreamingResponse, JSONResponse
 from pydantic import BaseModel, Field
 
 from backend.config import get_settings
@@ -264,7 +264,7 @@ async def readiness():
         session = await get_session()
         async with session:
             # Query active mandates table to verify DB health
-            mandates = await get_mandates(session)
+            mandates = await list_mandates(session)
             checks["database"] = True
     except Exception as db_err:
         checks["database_error"] = str(db_err)
@@ -987,6 +987,7 @@ async def get_agent_health_endpoint():
 
 if __name__ == "__main__":
     import uvicorn
+    settings = get_settings()
     uvicorn.run(
         "backend.main:app",
         host=settings.api_host,
