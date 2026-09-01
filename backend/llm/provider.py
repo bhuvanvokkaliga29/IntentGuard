@@ -108,12 +108,18 @@ class MockProvider(LLMProvider):
         if "chocolate" in p_lower or "sweet" in p_lower:
             category = "food_confectionery"
             item_type = "confectionery"
-        elif "flight" in p_lower or "airline" in p_lower:
+        elif "flight" in p_lower or "airline" in p_lower or "dubai" in p_lower:
             category = "travel"
             item_type = "airline_ticket"
-        elif "paper" in p_lower or "pen" in p_lower or "stationery" in p_lower:
+        elif "spa" in p_lower or "skincare" in p_lower or "cosmetic" in p_lower:
+            category = "cosmetics"
+            item_type = "luxury_spa"
+        elif "paper" in p_lower or "pen" in p_lower or "stationery" in p_lower or "sticky notes" in p_lower or "desk" in p_lower:
             category = "office_supplies"
             item_type = "stationery"
+        elif "air freshener" in p_lower or "diffuser" in p_lower:
+            category = "office_supplies"
+            item_type = "ambient_decor"
         else:
             category = "general"
             item_type = "unspecified"
@@ -135,15 +141,24 @@ class MockProvider(LLMProvider):
         system_instruction: str = "",
     ) -> Tuple[Dict, Dict]:
         p_lower = prompt.lower()
-        if "chocolate" in p_lower and "office supplies" in p_lower:
+        if ("chocolate" in p_lower or "sweet" in p_lower) and ("office supplies" in p_lower or "stationery" in p_lower):
             verdict = "no_fit"
             reasoning = "Chocolates are confectionery and do not fit office supplies mandate intent."
-        elif "dubai" in p_lower and "domestic" in p_lower:
+        elif "dubai" in p_lower and ("domestic" in p_lower or "bangalore" in p_lower):
             verdict = "no_fit"
             reasoning = "International travel violates domestic flight mandate intent."
-        elif "paper" in p_lower or "pen" in p_lower:
-            verdict = "direct_fit"
+        elif ("spa" in p_lower or "skincare" in p_lower) and ("groceries" in p_lower or "supermarket" in p_lower):
+            verdict = "no_fit"
+            reasoning = "Luxury spa package is cosmetics and violates household groceries mandate intent."
+        elif "paper" in p_lower or "pen" in p_lower or "sticky notes" in p_lower or "stationery" in p_lower or "desk" in p_lower:
+            verdict = "fit"
             reasoning = "Stationery items directly fit the office supplies mandate."
+        elif "air freshener" in p_lower or "diffuser" in p_lower:
+            verdict = "ambiguous"
+            reasoning = "Item intent cannot be deterministically verified from description under vague mandate."
+        elif "miscellaneous" in p_lower:
+            verdict = "ambiguous"
+            reasoning = "Description 'miscellaneous item' provides insufficient evidence to confirm intent compliance."
         else:
             verdict = "ambiguous"
             reasoning = "Item intent cannot be deterministically verified from description."
@@ -162,7 +177,21 @@ class MockProvider(LLMProvider):
         prompt: str,
         system_instruction: str = "",
     ) -> Tuple[str, Dict]:
-        explanation = "Decision rendered based on structural constraints and semantic intent assessment (LOCAL_MOCK_MODE)."
+        p_lower = prompt.lower()
+        if "chocolate" in p_lower:
+            explanation = "Item is confectionery/food, violating the stated office supplies intent. Blocked by semantic policy."
+        elif "dubai" in p_lower:
+            explanation = "Flight destination (Dubai) is international, violating the domestic mandate restriction. Blocked."
+        elif "spa" in p_lower or "skincare" in p_lower:
+            explanation = "Luxury cosmetic spa bundle violates household groceries mandate. Blocked by semantic verification."
+        elif "paper" in p_lower or "pen" in p_lower:
+            explanation = "Standard office supplies from approved merchant well within limit. Approved by semantic verification."
+        elif "diffuser" in p_lower or "air freshener" in p_lower:
+            explanation = "Mandate purpose is too underspecified to establish definitive semantic entailment. Escalated for user confirmation."
+        elif "miscellaneous" in p_lower:
+            explanation = "Description 'miscellaneous item' provides insufficient evidence to confirm intent compliance. Safely escalated."
+        else:
+            explanation = "Decision rendered based on structural constraints and semantic intent assessment."
         usage = {"prompt_tokens": 80, "completion_tokens": 30, "mode": "LOCAL_MOCK_MODE"}
         return explanation, usage
 

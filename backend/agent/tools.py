@@ -516,7 +516,8 @@ async def tool_generate_explanation(
             system_instruction="Explain financial authorization decision clearly and concisely in 2 sentences."
         )
     except Exception:
-        explanation = f"Transaction {final_decision.lower()}ed based on structural rules and semantic intent alignment."
+        suffix = "d" if final_decision.lower().endswith("e") else "ed"
+        explanation = f"Transaction {final_decision.lower()}{suffix} based on structural rules and semantic intent alignment."
     latency = (time.time() - start) * 1000
     record = {
         "tool_name": "tool_generate_explanation",

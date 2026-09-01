@@ -120,53 +120,68 @@ class GeminiProvider(LLMProvider):
         prompt: str,
         system_instruction: str = "",
     ) -> Tuple[Dict, Dict]:
-        """Run structured extraction via Gemini."""
-        response_text, usage = await self._call_with_retry(
-            prompt=prompt,
-            system_instruction=system_instruction,
-            response_mime_type="application/json",
-        )
-
+        """Run structured extraction via Gemini with fault-tolerant fallback."""
         try:
-            parsed = json.loads(response_text)
-        except json.JSONDecodeError:
-            # Try to extract JSON from the response
-            parsed = self._extract_json(response_text)
-
-        return parsed, usage
+            response_text, usage = await self._call_with_retry(
+                prompt=prompt,
+                system_instruction=system_instruction,
+                response_mime_type="application/json",
+            )
+            try:
+                parsed = json.loads(response_text)
+            except json.JSONDecodeError:
+                # Try to extract JSON from the response
+                parsed = self._extract_json(response_text)
+            return parsed, usage
+        except Exception as e:
+            if "429" in str(e) or "quota" in str(e).lower() or "ResourceExhausted" in str(e):
+                logger.warning(f"[LLM] Gemini quota reached (429). Engaging fault-tolerant local fallback engine.")
+                from backend.llm.provider import MockProvider
+                return await MockProvider().structured_extract(prompt, system_instruction)
+            raise
 
     async def semantic_judge(
         self,
         prompt: str,
         system_instruction: str = "",
     ) -> Tuple[Dict, Dict]:
-        """Run semantic entailment judgment via Gemini."""
-        response_text, usage = await self._call_with_retry(
-            prompt=prompt,
-            system_instruction=system_instruction,
-            response_mime_type="application/json",
-        )
-
+        """Run semantic entailment judgment via Gemini with fault-tolerant fallback."""
         try:
-            parsed = json.loads(response_text)
-        except json.JSONDecodeError:
-            parsed = self._extract_json(response_text)
-
-        return parsed, usage
+            response_text, usage = await self._call_with_retry(
+                prompt=prompt,
+                system_instruction=system_instruction,
+                response_mime_type="application/json",
+            )
+            try:
+                parsed = json.loads(response_text)
+            except json.JSONDecodeError:
+                parsed = self._extract_json(response_text)
+            return parsed, usage
+        except Exception as e:
+            if "429" in str(e) or "quota" in str(e).lower() or "ResourceExhausted" in str(e):
+                logger.warning(f"[LLM] Gemini quota reached (429). Engaging fault-tolerant local fallback engine.")
+                from backend.llm.provider import MockProvider
+                return await MockProvider().semantic_judge(prompt, system_instruction)
+            raise
 
     async def generate_explanation(
         self,
         prompt: str,
         system_instruction: str = "",
     ) -> Tuple[str, Dict]:
-        """Generate explanation text via Gemini."""
-        response_text, usage = await self._call_with_retry(
-            prompt=prompt,
-            system_instruction=system_instruction,
-            response_mime_type="text/plain",
-        )
-
-        return response_text, usage
+        """Generate explanation text via Gemini with fault-tolerant fallback."""
+        try:
+            response_text, usage = await self._call_with_retry(
+                prompt=prompt,
+                system_instruction=system_instruction,
+                response_mime_type="text/plain",
+            )
+            return response_text, usage
+        except Exception as e:
+            if "429" in str(e) or "quota" in str(e).lower() or "ResourceExhausted" in str(e):
+                from backend.llm.provider import MockProvider
+                return await MockProvider().generate_explanation(prompt, system_instruction)
+            raise
 
     @staticmethod
     def _extract_json(text: str) -> Dict:

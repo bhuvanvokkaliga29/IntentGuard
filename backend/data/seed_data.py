@@ -139,6 +139,18 @@ SEED_MANDATES = [
         "location_constraint": None,
         "purpose_context": "Document printing, binding, and photocopying for internal office use.",
     },
+    {
+        "id": "mandate-008-vague",
+        "intent_text": "Buy something useful for the office.",
+        "max_amount_per_txn": 2000.0,
+        "budget_cap": 8000.0,
+        "allowed_categories": ["office_supplies", "stationery", "general"],
+        "allowed_merchants": ["Stationery Mart", "Office Depot India", "Pen Paper Store"],
+        "frequency": "weekly",
+        "exclusions": [],
+        "location_constraint": None,
+        "purpose_context": "Buy something useful for the office.",
+    },
 ]
 
 
