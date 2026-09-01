@@ -56,22 +56,22 @@ export default function Home() {
     <div className="flex flex-col gap-y-16 py-12 animate-in fade-in duration-500 font-mono">
       
       {/* Header Badge & Hero */}
-      <section className="flex flex-col items-center text-center max-w-5xl mx-auto pt-6">
-        <div className="inline-flex items-center gap-2 px-3 py-1 rounded bg-carbon border border-graphite text-[12px] font-mono text-ash mb-6">
+      <section className="flex flex-col items-center text-center w-full max-w-[1240px] mx-auto pt-2 md:pt-4">
+        <div className="inline-flex items-center gap-2 px-3 py-1 rounded bg-carbon border border-graphite text-[12px] font-mono text-ash mb-5">
           <span className="w-2 h-2 rounded-full bg-pulse-green"></span>
           <span>RAZORPAY AI BUILDATHON 2026 · TRACK 4: AI FINANCE CONTROLLER</span>
         </div>
         
-        <h1 className="text-[44px] md:text-[56px] font-mono font-semibold tracking-tight text-paper leading-[1.1] mb-8">
+        <h1 className="text-[44px] md:text-[56px] font-mono font-semibold tracking-tight text-paper leading-[1.1] mb-6">
           The transaction is within the limit.<br className="hidden md:inline" /> The intent is not.
         </h1>
 
         {/* Large Two-Panel Technical Explanation Box (Main Visual) */}
-        <div className="w-full bg-carbon/90 border border-graphite rounded-lg overflow-hidden mb-8 font-mono text-left shadow-2xl">
+        <div className="w-full bg-carbon/90 border border-graphite rounded-lg overflow-hidden mb-6 font-mono text-left shadow-2xl">
           <div className="grid md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-graphite">
             
             {/* Left Panel: The Problem */}
-            <div className="p-6 md:p-8 flex flex-col justify-between space-y-6">
+            <div className="p-7 md:p-9 flex flex-col justify-between space-y-6">
               <div>
                 <div className="flex items-center justify-between mb-3">
                   <span className="text-[12px] text-ash uppercase font-semibold tracking-wider">The Problem</span>
@@ -83,7 +83,7 @@ export default function Home() {
               </div>
 
               {/* Conceptual Example */}
-              <div className="bg-obsidian/90 p-4 rounded border border-graphite/70 space-y-3 text-[12px]">
+              <div className="bg-obsidian/90 p-4 md:p-5 rounded border border-graphite/70 space-y-3 text-[12px]">
                 <div>
                   <div className="text-[10px] text-ash uppercase font-semibold tracking-wider">User Intent</div>
                   <div className="text-fog font-medium">Office supplies ≤ ₹2,000</div>
@@ -108,7 +108,7 @@ export default function Home() {
             </div>
 
             {/* Right Panel: IntentGuard Control Flow */}
-            <div className="p-6 md:p-8 flex flex-col justify-between bg-carbon/40 space-y-6">
+            <div className="p-7 md:p-9 flex flex-col justify-between bg-carbon/40 space-y-6">
               <div>
                 <div className="flex items-center justify-between mb-1">
                   <div className="flex items-center gap-2">
