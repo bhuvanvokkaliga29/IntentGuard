@@ -512,8 +512,8 @@ IntentGuard/
 
 ```bash
 # 1. Clone the repository
-git clone https://github.com/intentguard/intentguard.git
-cd intentguard
+git clone https://github.com/bhuvanvokkaliga29/IntentGuard.git
+cd IntentGuard
 
 # 2. Configure environment
 cp .env.example .env
@@ -533,7 +533,7 @@ make dev
 
 ### 🧪 Verification & Audit Commands:
 ```bash
-make test       # Runs all 77 unit & integration tests
+make test       # Runs all 102 unit & integration tests
 make smoke      # Runs complete 8-step end-to-end integration test
 make seed       # Generates 500-case deterministic benchmark dataset
 make evaluate   # Evaluates benchmark against Baseline 1, 2, and 3
@@ -552,7 +552,7 @@ make audit      # Runs automated repository security and secret audit
 | **Agent Autonomy** | Fake scripted animations | **Autonomous worker agents executing real catalog tools with bounded self-healing** |
 | **Observability** | Static UI | **Live Server-Sent Events (SSE) stream, trace graphs, observable reasoning summaries** |
 | **Evaluation Rigor** | Cherry-picked demo numbers | **500-sample deterministic benchmark comparing 3 baseline architectures** |
-| **Code Quality** | Prototype spaghetti code | **77 Pytest tests passing, 0 build errors, 0 committed secrets, 5 Architecture Decision Records** |
+| **Code Quality** | Prototype spaghetti code | **102 Pytest tests passing (4 skipped), 0 build errors, 0 committed secrets, 5 Architecture Decision Records** |
 
 ---
 

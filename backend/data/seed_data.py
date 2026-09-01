@@ -151,9 +151,9 @@ async def seed_mandates():
             existing = await get_mandate(session, mandate_data["id"])
             if existing is None:
                 await create_mandate(session, mandate_data)
-                print(f"  ✓ Seeded mandate: {mandate_data['id']}")
+                print(f"  OK Seeded mandate: {mandate_data['id']}")
             else:
-                print(f"  · Mandate already exists: {mandate_data['id']}")
+                print(f"  - Mandate already exists: {mandate_data['id']}")
 
 
 if __name__ == "__main__":

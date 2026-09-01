@@ -600,7 +600,7 @@ async def evaluate_transaction_endpoint(req: EvaluateRequest):
             mandate_id=req.mandate_id,
         )
 
-        if result.get("error") and result.get("decision_id") is None:
+        if isinstance(result, dict) and result.get("error") and result.get("decision_id") is None:
             raise HTTPException(status_code=500, detail=result["error"])
 
         return result
@@ -689,11 +689,13 @@ async def get_dataset():
     session = await get_session()
     async with session:
         rows = await list_transactions(session)
+        # Only return the curated synthetic dataset, not random demo transactions
+        curated_rows = [r for r in rows if r.ground_truth_tier is not None]
         return {
             "notice": "GROUND TRUTH — EVALUATION ONLY. These labels are never visible to the agent at runtime.",
             "transactions": [
                 transaction_row_to_dict(r, include_ground_truth=True)
-                for r in rows
+                for r in curated_rows
             ],
         }
 

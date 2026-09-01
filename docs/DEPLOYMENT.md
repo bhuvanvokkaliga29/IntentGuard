@@ -3,8 +3,8 @@
 ## 1. Local Development Setup
 ```bash
 # 1. Clone repository
-git clone https://github.com/intentguard/intentguard.git
-cd intentguard
+git clone https://github.com/bhuvanvokkaliga29/IntentGuard.git
+cd IntentGuard
 
 # 2. Configure environment
 cp .env.example .env
@@ -30,7 +30,7 @@ docker-compose up --build
 
 ## 3. Verification & Benchmark Execution
 ```bash
-# Run 77 automated unit tests
+# Run 102 automated unit & integration tests
 make test
 
 # Run End-to-End smoke test

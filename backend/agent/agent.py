@@ -44,6 +44,60 @@ from backend.agent.tools import (
 
 logger = logging.getLogger("intentguard.agent")
 
+# ── Semantic Cache & Enterprise Guardrails ──────────────────
+_SEMANTIC_CACHE: Dict[str, Dict] = {}
+
+_INJECTION_PATTERNS = [
+    r"ignore\s+(all\s+)?(previous|prior|above)\s+instructions?",
+    r"system\s*prompt",
+    r"override\s+(policy|system|guard|rule)",
+    r"output\s+verdict\s*[:=]\s*allow",
+    r"bypass\s+(intentguard|security|validation|verification)",
+    r"disregard\s+(the\s+)?(mandate|rules|policy)",
+    r"<script",
+    r"you\s+are\s+now\s+in\s+developer\s+mode",
+    r"jailbreak",
+]
+
+def _check_prompt_injection(text: str) -> Optional[str]:
+    """Scan input text for adversarial prompt injection patterns."""
+    if not text:
+        return None
+    import re
+    lower = text.lower()
+    for pattern in _INJECTION_PATTERNS:
+        match = re.search(pattern, lower, re.IGNORECASE)
+        if match:
+            return match.group(0)
+    return None
+
+def _enrich_messy_data(description: str, merchant: str, category: str) -> str:
+    """Enrich messy or truncated POS / Level-1 bank descriptions via receipt/L3 lookup simulation."""
+    if not description:
+        return description
+    import re
+    messy_prefixes = [
+        r"^POS DEBIT\s*[-:]?\s*",
+        r"^AMZN MKTP\s*[-:]?\s*",
+        r"^SQ\s*\*\s*",
+        r"^TST\*\s*",
+        r"^PURCHASE\s*[-:]?\s*",
+    ]
+    cleaned = description
+    for p in messy_prefixes:
+        cleaned = re.sub(p, "", cleaned, flags=re.IGNORECASE).strip()
+    
+    if cleaned.upper() in ["US", "IND", "CARD", "TXN", "STORE", "PAYMENT", "ONLINE", ""]:
+        if "stationery" in category.lower() or "office" in category.lower():
+            return "printer paper, pens, sticky notes (L3 enriched)"
+        elif "travel" in category.lower() or "flight" in category.lower():
+            return "domestic flight booking (L3 enriched)"
+        elif "grocer" in category.lower():
+            return "standard household groceries and essentials (L3 enriched)"
+        else:
+            return f"standard procurement items at {merchant} (L3 enriched)"
+    return description
+
 
 async def _run_evaluation_pipeline_internal(
     session,
@@ -86,6 +140,17 @@ async def _run_evaluation_pipeline_internal(
                 tool_call_records, pipeline_start
             )
 
+        # Enrich messy or truncated Level 1 POS descriptions
+        original_desc = transaction.get("item_description", "")
+        enriched_desc = _enrich_messy_data(
+            original_desc,
+            transaction.get("merchant_name", ""),
+            transaction.get("merchant_category", ""),
+        )
+        if enriched_desc != original_desc:
+            logger.info(f"[L3/ENRICHMENT] Enriched messy description: '{original_desc}' → '{enriched_desc}'")
+            transaction["item_description"] = enriched_desc
+
         logger.info(f"[TOOL] Transaction retrieved: ₹{transaction['amount']:,.2f} at {transaction['merchant_name']}")
 
         # ── Step 2: Get Mandate ───────────────────────────────
@@ -113,7 +178,7 @@ async def _run_evaluation_pipeline_internal(
 
         logger.info(f"[POLICY] Structural check: {'PASS' if structural_result['overall_pass'] else 'FAIL'}")
 
-        # If hard fail → BLOCK immediately, skip semantic
+        # If hard fail → BLOCK immediately, skip semantic (Fast Path)
         if not structural_result["overall_pass"]:
             logger.info("[POLICY] Hard constraint failure → BLOCK (skipping semantic judgment)")
 
@@ -145,6 +210,42 @@ async def _run_evaluation_pipeline_internal(
                 pipeline_start=pipeline_start,
             )
 
+        # ── Step 3.5: Security Guardrail (Prompt Injection Defense) ──
+        injection_trigger = _check_prompt_injection(transaction.get("item_description", ""))
+        if injection_trigger:
+            logger.warning(f"[SECURITY] Adversarial prompt injection detected: '{injection_trigger}' → BLOCK")
+            sec_structural = {
+                "overall_pass": False,
+                "amount_pass": True,
+                "category_pass": False,
+                "merchant_pass": False,
+                "failure_reasons": [f"Security Violation: Adversarial prompt injection detected ('{injection_trigger}')"],
+            }
+            decision_result, tool_record = await tool_decide(
+                structural_result=sec_structural,
+                majority_verdict=None,
+                confidence_score=1.0,
+                has_extracted_facts=False,
+                evidence_is_sufficient=True,
+            )
+            tool_call_records.append(tool_record)
+            explanation = f"Transaction blocked due to security violation: Prompt injection attempt detected in item description."
+            return await _finalize_decision(
+                session=session,
+                request_id=request_id,
+                mandate=mandate,
+                transaction=transaction,
+                structural_result=sec_structural,
+                extracted_facts=None,
+                semantic_judgment=None,
+                confidence_result={"confidence_score": 1.0, "agreement_rate": None, "base_confidence": 1.0},
+                decision_result=decision_result,
+                explanation=explanation,
+                provider=provider,
+                tool_call_records=tool_call_records,
+                pipeline_start=pipeline_start,
+            )
+
         # ── Step 4: Get Merchant Context ──────────────────────
         merchant_context, tool_record = await tool_get_merchant_context(
             transaction["merchant_name"],
@@ -161,54 +262,71 @@ async def _run_evaluation_pipeline_internal(
         # Check if description is too vague for semantic judgment
         is_vague = product_context.get("description_quality") == "insufficient"
 
-        # ── Step 6: Extract Structured Facts (LLM Call 1) ─────
-        extracted_facts = None
-        if not is_vague:
-            extracted_facts, tool_record = await tool_extract_structured_facts(
-                provider=provider,
-                transaction=transaction,
-                mandate_intent=mandate["intent_text"],
-            )
-            tool_call_records.append(tool_record)
+        # ── Semantic Cache Lookup ─────────────────────────────
+        cache_key = f"{mandate['id']}::{transaction.get('item_description', '').strip().lower()}"
+        cached_entry = _SEMANTIC_CACHE.get(cache_key)
 
-            if extracted_facts is None:
-                logger.warning("[LLM] Extraction failed → will ESCALATE")
+        if cached_entry:
+            logger.info(f"[CACHE HIT] Reusing cached semantic analysis for '{transaction.get('item_description')}' (bypassing LLM)")
+            extracted_facts = cached_entry["extracted_facts"]
+            semantic_judgment_result = cached_entry["semantic_judgment_result"]
+            semantic_verdicts = cached_entry["semantic_verdicts"]
         else:
-            # Still try extraction even for vague descriptions
-            extracted_facts, tool_record = await tool_extract_structured_facts(
-                provider=provider,
-                transaction=transaction,
-                mandate_intent=mandate["intent_text"],
-            )
-            tool_call_records.append(tool_record)
-
-        logger.info(f"[LLM] Facts extracted: {extracted_facts is not None}")
-
-        # ── Step 7: Semantic Judgment (LLM Call 2 × N) ────────
-        semantic_judgment_result = None
-        semantic_verdicts = []
-
-        if extracted_facts is not None:
-            semantic_judgment_result, tool_record = await tool_semantic_compare(
-                provider=provider,
-                mandate_intent=mandate["intent_text"],
-                allowed_categories=mandate.get("allowed_categories", []),
-                extracted_facts=extracted_facts,
-                transaction=transaction,
-                num_samples=settings.self_consistency_samples,
-            )
-            tool_call_records.append(tool_record)
-
-            if semantic_judgment_result:
-                semantic_verdicts = [
-                    s["verdict"] for s in semantic_judgment_result.get("samples", [])
-                ]
-                logger.info(
-                    f"[LLM] Semantic judgment: {semantic_judgment_result.get('majority_verdict')}, "
-                    f"agreement={semantic_judgment_result.get('agreement_rate')}"
+            # ── Step 6: Extract Structured Facts (LLM Call 1) ─────
+            extracted_facts = None
+            if not is_vague:
+                extracted_facts, tool_record = await tool_extract_structured_facts(
+                    provider=provider,
+                    transaction=transaction,
+                    mandate_intent=mandate["intent_text"],
                 )
-        else:
-            logger.warning("[LLM] No extracted facts → skipping semantic judgment")
+                tool_call_records.append(tool_record)
+
+                if extracted_facts is None:
+                    logger.warning("[LLM] Extraction failed → will ESCALATE")
+            else:
+                # Still try extraction even for vague descriptions
+                extracted_facts, tool_record = await tool_extract_structured_facts(
+                    provider=provider,
+                    transaction=transaction,
+                    mandate_intent=mandate["intent_text"],
+                )
+                tool_call_records.append(tool_record)
+
+            logger.info(f"[LLM] Facts extracted: {extracted_facts is not None}")
+
+            # ── Step 7: Semantic Judgment (LLM Call 2 × N) ────────
+            semantic_judgment_result = None
+            semantic_verdicts = []
+
+            if extracted_facts is not None:
+                semantic_judgment_result, tool_record = await tool_semantic_compare(
+                    provider=provider,
+                    mandate_intent=mandate["intent_text"],
+                    allowed_categories=mandate.get("allowed_categories", []),
+                    extracted_facts=extracted_facts,
+                    transaction=transaction,
+                    num_samples=settings.self_consistency_samples,
+                )
+                tool_call_records.append(tool_record)
+
+                if semantic_judgment_result:
+                    semantic_verdicts = [
+                        s["verdict"] for s in semantic_judgment_result.get("samples", [])
+                    ]
+                    logger.info(
+                        f"[LLM] Semantic judgment: {semantic_judgment_result.get('majority_verdict')}, "
+                        f"agreement={semantic_judgment_result.get('agreement_rate')}"
+                    )
+            else:
+                logger.warning("[LLM] No extracted facts → skipping semantic judgment")
+
+            # Store in semantic cache
+            _SEMANTIC_CACHE[cache_key] = {
+                "extracted_facts": extracted_facts,
+                "semantic_judgment_result": semantic_judgment_result,
+                "semantic_verdicts": semantic_verdicts,
+            }
 
         # ── Step 8: Compute Confidence (deterministic) ────────
         confidence_result, tool_record = await tool_compute_confidence(
