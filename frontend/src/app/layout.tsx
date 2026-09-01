@@ -1,6 +1,19 @@
 import type { Metadata } from "next";
+import { Inter, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import Link from "next/link";
+
+const inter = Inter({
+  subsets: ["latin"],
+  variable: "--font-inter",
+  display: "swap",
+});
+
+const jetbrainsMono = JetBrains_Mono({
+  subsets: ["latin"],
+  variable: "--font-mono",
+  display: "swap",
+});
 
 export const metadata: Metadata = {
   title: "IntentGuard — Semantic Spending Guard for Autonomous Agents",
@@ -14,7 +27,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className="antialiased min-h-screen flex flex-col bg-void text-mist selection:bg-acid-lime/30 selection:text-void font-sans">
+      <body className={`${inter.variable} ${jetbrainsMono.variable} antialiased min-h-screen flex flex-col bg-void text-mist selection:bg-acid-lime/30 selection:text-void`}>
         {/* Navigation - Dark Console Top Bar */}
         <header className="sticky top-0 z-50 w-full bg-void/90 backdrop-blur-md border-b border-graphite/60">
           <div className="max-w-[1400px] mx-auto px-6 h-16 flex items-center justify-between">
