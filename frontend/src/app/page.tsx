@@ -70,52 +70,76 @@ export default function Home() {
           IntentGuard verifies whether an agent’s proposed transaction matches what the user actually authorized.
         </p>
 
-        {/* Architectural Control Bridge Visual */}
-        <div className="w-full max-w-2xl mb-8 font-mono">
-          <div className="flex flex-col md:flex-row items-center justify-between gap-3 md:gap-0 bg-carbon/80 border border-graphite rounded-lg px-4 py-3 text-center">
-            {/* Stage 1: Autonomous Agents */}
-            <div className="flex flex-col items-center md:items-start md:pl-1">
-              <span className="text-[10px] text-ash tracking-wider uppercase font-semibold">Autonomous Agents</span>
-              <span className="text-[12px] text-fog font-medium mt-0.5">Buying · Recommend · Voice</span>
-            </div>
-
-            {/* Connector 1: Propose */}
-            <div className="flex md:flex-col items-center justify-center gap-0.5 text-ash my-0.5 md:my-0 md:px-2">
-              <span className="text-[9px] tracking-widest uppercase font-semibold text-fog/70">PROPOSE</span>
-              <span className="text-[11px] text-ash rotate-90 md:rotate-0">&rarr;</span>
-            </div>
-
-            {/* Stage 2: IntentGuard Central Bridge (Visually Emphasized) */}
-            <Link 
-              href="/demo"
-              className="group flex flex-col items-center px-4 py-1.5 bg-obsidian border border-acid-lime/40 rounded shadow-[0_0_10px_rgba(228,242,34,0.05)] hover:border-acid-lime/70 transition-colors"
-              title="IntentGuard verifies and controls every proposed transaction"
-            >
-              <div className="flex items-center gap-1.5">
-                <span className="w-1.5 h-1.5 rounded-full bg-acid-lime"></span>
-                <span className="text-[12px] font-bold text-paper tracking-wider uppercase">INTENTGUARD</span>
+        {/* Technical Explanation Panel: The Problem vs IntentGuard Control Flow */}
+        <div className="w-full max-w-3xl bg-carbon/80 border border-graphite rounded-lg overflow-hidden mb-8 font-mono text-left shadow-lg">
+          <div className="grid md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-graphite">
+            
+            {/* Left Half: The Problem / Theory */}
+            <div className="p-5 flex flex-col justify-between space-y-3">
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-[11px] text-ash uppercase font-semibold tracking-wider">The Problem</span>
+                  <span className="text-[10px] text-fog/60 tracking-wider">EXAMPLE CASE</span>
+                </div>
+                <p className="text-[12px] text-mist/90 leading-relaxed font-sans">
+                  An agent can remain within a spending limit while still acting outside the user&apos;s intent.
+                </p>
               </div>
-              <span className="text-[10px] text-acid-lime/90 font-medium tracking-tight mt-0.5">
-                VERIFY · CONTROL
-              </span>
-            </Link>
 
-            {/* Connector 2: Authorized Only */}
-            <div className="flex md:flex-col items-center justify-center gap-0.5 text-ash my-0.5 md:my-0 md:px-2">
-              <span className="text-[9px] tracking-widest uppercase font-semibold text-fog/70">AUTHORIZED ONLY</span>
-              <span className="text-[11px] text-ash rotate-90 md:rotate-0">&rarr;</span>
+              {/* Conceptual Comparison */}
+              <div className="bg-obsidian/90 p-3 rounded border border-graphite/60 space-y-2 text-[11px]">
+                <div>
+                  <div className="text-[10px] text-ash uppercase font-semibold">User Intent</div>
+                  <div className="text-fog">Office supplies · ≤ ₹2,000</div>
+                </div>
+                <div className="border-t border-graphite/40 pt-2">
+                  <div className="text-[10px] text-ash uppercase font-semibold">Agent Proposal</div>
+                  <div className="text-paper font-semibold">Gaming headphones · ₹1,850</div>
+                </div>
+              </div>
+
+              {/* Structural vs Semantic Result */}
+              <div className="flex items-center justify-between pt-1 text-[11px] border-t border-graphite/50">
+                <span className="text-fog">Structural: <span className="text-pulse-green font-semibold">PASS</span></span>
+                <span className="text-fog">Semantic: <span className="text-coral-red font-semibold">MISMATCH</span></span>
+              </div>
             </div>
 
-            {/* Stage 3: Financial Execution */}
-            <div className="flex flex-col items-center md:items-end md:pr-1">
-              <span className="text-[10px] text-ash tracking-wider uppercase font-semibold">Downstream</span>
-              <span className="text-[12px] text-fog font-medium mt-0.5">Financial Execution</span>
-            </div>
-          </div>
+            {/* Right Half: IntentGuard Control Flow */}
+            <div className="p-5 flex flex-col justify-between bg-carbon/40 space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-1.5">
+                  <span className="w-1.5 h-1.5 rounded-full bg-acid-lime"></span>
+                  <span className="text-[12px] font-bold text-paper tracking-wider uppercase">INTENTGUARD</span>
+                </div>
+                <span className="text-[10px] text-acid-lime font-semibold uppercase tracking-wider">CONTROL FLOW</span>
+              </div>
 
-          {/* Conceptual subline */}
-          <div className="text-[11px] text-ash/80 font-mono mt-2 text-center tracking-tight">
-            Proposals cross this control boundary before financial execution.
+              {/* Step-by-step Flow */}
+              <div className="flex flex-col items-center space-y-1 text-center text-[11px]">
+                <div className="w-full py-1 px-2.5 bg-obsidian rounded border border-graphite/60 text-fog text-[11px]">
+                  Agent Proposal
+                </div>
+                <span className="text-[10px] text-ash leading-none">&darr;</span>
+                
+                {/* Central IntentGuard Engine Box */}
+                <div className="w-full py-1.5 px-3 bg-obsidian border border-acid-lime/40 rounded text-center shadow-[0_0_8px_rgba(228,242,34,0.04)]">
+                  <div className="text-[11px] font-bold text-paper tracking-wide">IntentGuard Engine</div>
+                  <div className="text-[9px] text-acid-lime/90 tracking-tight mt-0.5">Semantic Verification · Deterministic Policy</div>
+                </div>
+                
+                <span className="text-[10px] text-ash leading-none">&darr;</span>
+                <div className="w-full py-1 px-2.5 bg-obsidian rounded border border-graphite/60 text-[11px] font-semibold text-paper tracking-wider">
+                  ALLOW &nbsp;·&nbsp; BLOCK &nbsp;·&nbsp; ESCALATE
+                </div>
+              </div>
+
+              {/* Subline */}
+              <div className="text-[10px] text-ash text-center pt-1 border-t border-graphite/50 tracking-tight">
+                Proposals cross the control boundary before execution.
+              </div>
+            </div>
+
           </div>
         </div>
         
