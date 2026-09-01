@@ -7,7 +7,7 @@ Provides CRUD operations for mandates, transactions, decisions, and audit logs.
 
 import json
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
 from sqlalchemy import (
@@ -48,7 +48,7 @@ class MandateRow(Base):
     exclusions: Mapped[Optional[str]] = mapped_column(Text, nullable=True)  # JSON array or null
     location_constraint: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
     purpose_context: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc))
 
 
 class TransactionRow(Base):
@@ -60,7 +60,7 @@ class TransactionRow(Base):
     merchant_name: Mapped[str] = mapped_column(String(255), nullable=False)
     merchant_category: Mapped[str] = mapped_column(String(255), nullable=False)
     item_description: Mapped[str] = mapped_column(Text, nullable=False)
-    timestamp: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    timestamp: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc))
     ground_truth_tier: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
     ground_truth_reason: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
 
@@ -85,7 +85,7 @@ class DecisionRow(Base):
     human_review_status: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)  # APPROVED, REJECTED, REQUEST_INFO
     human_review_notes: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     human_reviewed_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc))
 
 
 class AuditLogRow(Base):
@@ -107,7 +107,7 @@ class AuditLogRow(Base):
     final_decision: Mapped[Optional[str]] = mapped_column(String(20), nullable=True)
     explanation: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     latency_ms: Mapped[int] = mapped_column(Integer, default=0)
-    timestamp: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    timestamp: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc))
 
 
 class EvaluationRunRow(Base):
@@ -115,7 +115,7 @@ class EvaluationRunRow(Base):
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
     report_json: Mapped[str] = mapped_column(Text, nullable=False, default="{}")
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc))
 
 
 class ModelVersionRow(Base):
@@ -125,7 +125,7 @@ class ModelVersionRow(Base):
     provider: Mapped[str] = mapped_column(String(50), nullable=False)
     model_name: Mapped[str] = mapped_column(String(100), nullable=False)
     prompt_version: Mapped[str] = mapped_column(String(20), nullable=False)
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc))
 
 
 class AgentRunRow(Base):
@@ -143,7 +143,7 @@ class AgentRunRow(Base):
     tools_used: Mapped[str] = mapped_column(Text, default="[]")
     proposal_id: Mapped[Optional[str]] = mapped_column(String(36), nullable=True)
     decision_id: Mapped[Optional[str]] = mapped_column(String(36), nullable=True)
-    started_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    started_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc))
     completed_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
     latency_ms: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
     failure_reason: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
@@ -159,7 +159,7 @@ class AgentEventRow(Base):
     event_type: Mapped[str] = mapped_column(String(50), nullable=False)
     stage: Mapped[str] = mapped_column(String(50), nullable=False)
     payload: Mapped[str] = mapped_column(Text, default="{}")
-    timestamp: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    timestamp: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc))
 
 
 class ToolCallRow(Base):
@@ -174,7 +174,7 @@ class ToolCallRow(Base):
     status: Mapped[str] = mapped_column(String(30), default="STARTED")
     latency_ms: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
     error: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
-    started_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    started_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc))
     completed_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
 
 
@@ -190,7 +190,7 @@ class AgentRecoveryRow(Base):
     max_attempts: Mapped[int] = mapped_column(Integer, default=3)
     status: Mapped[str] = mapped_column(String(30), default="IN_PROGRESS")
     details: Mapped[str] = mapped_column(Text, default="{}")
-    timestamp: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    timestamp: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc))
 
 
 # ── Engine Management ────────────────────────────────────────
@@ -299,7 +299,7 @@ async def create_mandate(session: AsyncSession, mandate_data: dict) -> MandateRo
         exclusions=json.dumps(mandate_data["exclusions"]) if mandate_data.get("exclusions") else None,
         location_constraint=mandate_data.get("location_constraint"),
         purpose_context=mandate_data.get("purpose_context"),
-        created_at=mandate_data.get("created_at", datetime.utcnow()),
+        created_at=mandate_data.get("created_at", datetime.now(timezone.utc)),
     )
     session.add(row)
     await session.commit()
@@ -348,7 +348,7 @@ async def create_transaction(session: AsyncSession, txn_data: dict) -> Transacti
         merchant_name=txn_data["merchant_name"],
         merchant_category=txn_data["merchant_category"],
         item_description=txn_data["item_description"],
-        timestamp=txn_data.get("timestamp", datetime.utcnow()),
+        timestamp=txn_data.get("timestamp", datetime.now(timezone.utc)),
         ground_truth_tier=txn_data.get("ground_truth_tier"),
         ground_truth_reason=txn_data.get("ground_truth_reason"),
     )
@@ -411,7 +411,7 @@ async def create_decision(session: AsyncSession, decision_data: dict) -> Decisio
         prompt_version=decision_data.get("prompt_version"),
         latency_ms=decision_data.get("latency_ms", 0),
         audit_id=decision_data.get("audit_id"),
-        created_at=decision_data.get("created_at", datetime.utcnow()),
+        created_at=decision_data.get("created_at", datetime.now(timezone.utc)),
     )
     session.add(row)
     await session.commit()
@@ -468,7 +468,7 @@ async def update_decision_review(
         return None
     row.human_review_status = action.upper()
     row.human_review_notes = notes
-    row.human_reviewed_at = datetime.utcnow()
+    row.human_reviewed_at = datetime.now(timezone.utc)
     await session.commit()
     await session.refresh(row)
     return row
@@ -495,7 +495,7 @@ async def create_audit_log(session: AsyncSession, audit_data: dict) -> AuditLogR
         final_decision=audit_data.get("final_decision"),
         explanation=audit_data.get("explanation"),
         latency_ms=audit_data.get("latency_ms", 0),
-        timestamp=audit_data.get("timestamp", datetime.utcnow()),
+        timestamp=audit_data.get("timestamp", datetime.now(timezone.utc)),
     )
     session.add(row)
     await session.commit()
@@ -549,7 +549,7 @@ async def save_evaluation_report(session: AsyncSession, report_json: str) -> Eva
     row = EvaluationRunRow(
         id=str(uuid.uuid4()),
         report_json=report_json,
-        created_at=datetime.utcnow(),
+        created_at=datetime.now(timezone.utc),
     )
     session.add(row)
     await session.commit()
@@ -589,7 +589,7 @@ async def create_agent_run(
         attempt=1,
         max_retries=max_retries,
         tools_used="[]",
-        started_at=datetime.utcnow(),
+        started_at=datetime.now(timezone.utc),
     )
     session.add(row)
     await session.commit()
@@ -620,7 +620,7 @@ async def update_agent_run(
     if status is not None:
         row.status = status
         if status in ("COMPLETED", "FAILED", "SAFE_STOPPED"):
-            row.completed_at = datetime.utcnow()
+            row.completed_at = datetime.now(timezone.utc)
     if current_stage is not None:
         row.current_stage = current_stage
     if attempt is not None:
@@ -675,7 +675,7 @@ async def create_agent_event(
         event_type=event_type,
         stage=stage,
         payload=json.dumps(payload),
-        timestamp=datetime.utcnow(),
+        timestamp=datetime.now(timezone.utc),
     )
     session.add(row)
     await session.commit()
@@ -708,7 +708,7 @@ async def create_tool_call(
         tool_name=tool_name,
         input_summary=json.dumps(input_summary),
         status="STARTED",
-        started_at=datetime.utcnow(),
+        started_at=datetime.now(timezone.utc),
     )
     session.add(row)
     await session.commit()
@@ -732,7 +732,7 @@ async def update_tool_call(
         return None
 
     row.status = status
-    row.completed_at = datetime.utcnow()
+    row.completed_at = datetime.now(timezone.utc)
     if result_summary is not None:
         row.result_summary = json.dumps(result_summary)
     if latency_ms is not None:
@@ -776,7 +776,7 @@ async def create_agent_recovery(
         max_attempts=max_attempts,
         status=status,
         details=json.dumps(details or {}),
-        timestamp=datetime.utcnow(),
+        timestamp=datetime.now(timezone.utc),
     )
     session.add(row)
     await session.commit()

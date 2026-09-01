@@ -5,7 +5,7 @@ The IntentGuard Synthetic Agent Benchmark is a deterministic, balanced dataset o
 
 - **Size**: 500 records
 - **Format**: JSON (`backend/data/synthetic_dataset.json`)
-- **Split**: 80% Training / Calibration (400 cases), 20% Held-Out Test (100 cases)
+- **Split**: 80% Development / Calibration (400 cases), 20% Held-Out Test (100 cases)
 - **Generation Command**: `python scripts/generate_dataset.py --seed 42 --count 500`
 
 ## 2. Taxonomy & Class Distribution

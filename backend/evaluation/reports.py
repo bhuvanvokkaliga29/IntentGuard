@@ -60,7 +60,7 @@ def generate_comparison_report(
     Generate a comparison report across all baselines.
     """
     import uuid
-    from datetime import datetime
+    from datetime import datetime, timezone
 
     # Generate summary
     best_accuracy = max(r["accuracy"] for r in baseline_reports)
@@ -91,7 +91,7 @@ def generate_comparison_report(
 
     return {
         "run_id": str(uuid.uuid4()),
-        "timestamp": datetime.utcnow().isoformat(),
+        "timestamp": datetime.now(timezone.utc).isoformat(),
         "dataset_size": dataset_size,
         "baselines": baseline_reports,
         "summary": " ".join(summary_parts),

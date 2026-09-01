@@ -69,9 +69,8 @@ class Settings(BaseSettings):
     llm_request_timeout: int = Field(default=30, description="LLM request timeout in seconds")
     llm_max_retries: int = Field(default=1, description="Max retries on LLM failure")
 
-    # ── ML ────────────────────────────────────────────────────
-    ml_enabled: bool = Field(default=True, description="Enable ML calibration layer")
-    ml_model_path: str = Field(default="models/ambiguity_model.joblib")
+    # ── Agent Runtime ──────────────────────────────────────────
+    agent_max_runtime_seconds: int = Field(default=120, description="Hard timeout for agent pipeline execution in seconds")
 
     # ── Prompt Versions ───────────────────────────────────────
     extraction_prompt_version: str = Field(default="v1")

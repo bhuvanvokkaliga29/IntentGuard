@@ -1,7 +1,7 @@
 # IntentGuard — Benchmark Evaluation & Comparative Analysis
 
-> **Authoritative Source:** [`docs/reports/evaluation_report.json`](reports/evaluation_report.json)  
-> **Reproduce with:** `python scripts/evaluate.py --provider mock`
+> **Live AI Benchmark:** [`docs/reports/evaluation_report_live.json`](reports/evaluation_report_live.json)  
+> **Offline Mock (CI):** [`docs/reports/evaluation_report.json`](reports/evaluation_report.json)  
 
 ---
 
@@ -9,11 +9,25 @@
 
 Autonomous financial AI agents require supervisory control layers that intercept semantic intent violations without causing unacceptable false-block friction on legitimate spending. 
 
-We evaluated IntentGuard against two industry baselines on a held-out test split of **100 transactions** across diverse spending mandates (office supplies, domestic travel, team catering, and adversarial edge cases).
+We evaluate IntentGuard in two modes: a Live Provider benchmark using genuine LLMs (Gemini/Grok), and an Offline Mock benchmark for rapid CI/regression testing of the deterministic policy pipeline.
 
 ---
 
-## 2. Comparative Benchmark Matrix
+## 2. Live Provider Benchmark (Genuine AI Performance)
+
+**Source:** `docs/reports/evaluation_report_live.json`  
+**Command:** `python scripts/evaluate.py --provider gemini --limit 30`
+
+This evaluates the actual prompt templates and real LLM reasoning. *(Metrics will be populated once the live benchmark is run. Refer to the JSON report for authoritative numbers.)*
+
+---
+
+## 3. Offline Mock Benchmark (CI / Regression)
+
+**Source:** `docs/reports/evaluation_report.json`  
+**Command:** `python scripts/evaluate.py --provider mock`
+
+**WARNING:** The numbers below are generated using a keyword-matching simulator (`MockProvider`). They prove that the *deterministic structural engine and routing policy* work correctly, but they do **NOT** constitute evidence of real LLM semantic capability.
 
 | Evaluation Metric | Baseline 1: Structural-Only (Budget/Allowlist) | Baseline 2: IntentGuard Hybrid (Structural + Semantic + Policy) | Baseline 3: Semantic-Only (Unbounded LLM) |
 | :--- | :---: | :---: | :---: |

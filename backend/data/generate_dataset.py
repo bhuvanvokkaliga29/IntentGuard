@@ -17,7 +17,7 @@ random_seed = 42 for reproducibility.
 
 import random
 import uuid
-from datetime import datetime, timedelta
+from datetime import datetime, timezone, timedelta
 from typing import Dict, List
 
 from backend.data.seed_data import SEED_MANDATES
@@ -757,7 +757,7 @@ async def generate_full_dataset(session) -> Dict:
         existing = await get_transaction(session, txn.get("id", ""))
         if existing is None:
             txn.setdefault("id", str(uuid.uuid4()))
-            txn.setdefault("timestamp", datetime.utcnow())
+            txn.setdefault("timestamp", datetime.now(timezone.utc))
             await create_transaction(session, txn)
             inserted += 1
 

@@ -9,7 +9,7 @@ import asyncio
 import logging
 import time
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
 from backend.orchestrator.evaluator import evaluate_transaction
@@ -44,7 +44,7 @@ class BoundedRunMemory:
             "source": source,
             "content": content,
             "confidence": confidence,
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": datetime.now(timezone.utc).isoformat(),
         })
 
     def get_summary(self) -> List[Dict[str, Any]]:

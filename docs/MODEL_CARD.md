@@ -11,9 +11,21 @@
 - **Out-of-Scope**: Direct money execution, payment authorization, or budget mutation.
 
 ## 3. Evaluation & Performance
-- **Zero-Shot Semantic Fit Accuracy**: 94.2% on held-out test set.
-- **Adversarial Prompt Injection Robustness**: 100% interception (sandboxed as untrusted data strings).
-- **Latency**: ~350ms median response time for structured extraction.
+
+### Live Provider Benchmark (Genuine AI Performance)
+- See: `docs/reports/evaluation_report_live.json`
+- Evaluates real Gemini/Grok API semantic reasoning.
+- **Note:** Due to free-tier quota limits, this may be run on a constrained subset (e.g. n=30) of the full 500-case dataset.
+
+### Offline Mock Benchmark (CI / Regression)
+- See: `docs/reports/evaluation_report.json`
+- Evaluates the deterministic structural and confidence engines using a simulated keyword-based provider.
+- **Warning:** Mock results are not evidence of real LLM semantic reasoning and are solely for regression testing the pipeline architecture.
+
+## 4. Prompts & Security
+- **Prompt Version:** `v1` (Extraction and Semantic templates)
+- **Adversarial Prompt Injection Robustness:** 100% interception (sandboxed as untrusted data strings).
+- **Latency:** Dependent on live provider API response time.
 
 ## 4. Fallback Behavior
 If an LLM provider encounters a network timeout, quota limit, or malformed JSON output, the IntentGuard framework fails safely by escalating (`ESCALATE`) the proposal to the human review queue.

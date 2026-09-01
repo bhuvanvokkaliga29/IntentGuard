@@ -39,7 +39,14 @@ IntentGuard serves as the **supervisory financial-intent authorization and contr
 
 ## 3. Authoritative Benchmark Results
 
-All metrics below are computed dynamically by running `python scripts/evaluate.py --provider mock` against the held-out test split (100 cases, seed 42) of the 500-case deterministic benchmark:
+We provide two benchmark modes: a genuine AI capability benchmark and a CI/regression benchmark.
+
+### Live Provider Benchmark (Genuine AI Performance)
+Computed by running `python scripts/evaluate.py --provider gemini --limit 30`. This evaluates the real LLM's semantic reasoning capability.
+- **Source:** [`docs/reports/evaluation_report_live.json`](reports/evaluation_report_live.json)
+
+### Offline Mock Benchmark (CI / Regression)
+Computed dynamically by running `python scripts/evaluate.py --provider mock` against the held-out test split. This evaluates the deterministic structural and confidence engines using a simulated keyword-based provider.
 
 | Metric | Baseline 1: Structural-Only | Baseline 2: IntentGuard Hybrid | Baseline 3: Semantic-Only |
 | :--- | :---: | :---: | :---: |
@@ -55,7 +62,7 @@ All metrics below are computed dynamically by running `python scripts/evaluate.p
 
 ## 4. Test Suite Summary
 
-Total Automated Tests: **101 Tests (100% Passing)**
+Total Automated Tests: **102 Tests (100% Passing)**
 
 - **Critical Invariant Tests:** 10/10 passed (`test_critical_invariants.py`)
 - **Chaos & Fault Injection:** 6/6 passed (`test_chaos.py`)

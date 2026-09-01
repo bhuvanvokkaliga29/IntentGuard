@@ -19,6 +19,7 @@ The single IntentGuard Agent. Exact pipeline sequence:
 Do NOT reorder safety-critical operations.
 """
 
+import asyncio
 import logging
 import time
 import uuid
@@ -44,7 +45,7 @@ from backend.agent.tools import (
 logger = logging.getLogger("intentguard.agent")
 
 
-async def run_evaluation_pipeline(
+async def _run_evaluation_pipeline_internal(
     session,
     provider: LLMProvider,
     transaction_id: str,
@@ -282,6 +283,73 @@ async def run_evaluation_pipeline(
             request_id, transaction_id, str(e),
             tool_call_records, pipeline_start
         )
+
+
+async def run_evaluation_pipeline(
+    session,
+    provider: LLMProvider,
+    transaction_id: str,
+    mandate_id: Optional[str] = None,
+    request_id: Optional[str] = None,
+) -> Dict:
+    """
+    Wrapper for the evaluation pipeline that enforces the hard timeout.
+    """
+    settings = get_settings()
+    request_id = request_id or str(uuid.uuid4())
+    
+    try:
+        return await asyncio.wait_for(
+            _run_evaluation_pipeline_internal(
+                session=session,
+                provider=provider,
+                transaction_id=transaction_id,
+                mandate_id=mandate_id,
+                request_id=request_id,
+            ),
+            timeout=settings.agent_max_runtime_seconds
+        )
+    except asyncio.TimeoutError:
+        logger.error(f"[TIMEOUT] Agent pipeline timed out after {settings.agent_max_runtime_seconds}s for request {request_id}")
+        
+        # Log timeout event as failure mode
+        try:
+            from backend.db import AgentEventRow, AgentRecoveryRow
+            event = AgentEventRow(
+                run_id=request_id,
+                agent_id="IntentGuard_Verifier",
+                event_type="PIPELINE_TIMEOUT",
+                stage="PIPELINE_EXECUTION",
+                payload=f"{{\"timeout_seconds\": {settings.agent_max_runtime_seconds}}}",
+            )
+            session.add(event)
+            
+            recovery = AgentRecoveryRow(
+                run_id=request_id,
+                agent_id="IntentGuard_Verifier",
+                failure_type="TIMEOUT",
+                recovery_strategy="ESCALATE_TO_HUMAN",
+                status="COMPLETED",
+                details=f"{{\"reason\": \"Pipeline exceeded {settings.agent_max_runtime_seconds}s hard limit\"}}"
+            )
+            session.add(recovery)
+            await session.commit()
+        except Exception as e:
+            logger.error(f"[TIMEOUT] Failed to log timeout event to DB: {e}")
+
+        # Return ESCALATE on timeout
+        return {
+            "decision": "ESCALATE",
+            "decision_path": "agent_timeout -> ESCALATE",
+            "explanation": f"System automatically escalated transaction because verification exceeded {settings.agent_max_runtime_seconds}s hard timeout limit.",
+            "confidence_score": 0.0,
+            "structural_result": None,
+            "semantic_samples": None,
+            "extracted_facts": None,
+            "tool_records": [],
+            "audit_id": None,
+            "latency_ms": settings.agent_max_runtime_seconds * 1000
+        }
 
 
 async def _finalize_decision(

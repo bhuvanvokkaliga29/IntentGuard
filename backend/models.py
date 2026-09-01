@@ -10,7 +10,7 @@ to the agent runtime. Runtime schemas explicitly exclude these fields.
 """
 
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 from enum import Enum
 from typing import Any, Dict, List, Optional
 
@@ -75,7 +75,7 @@ class MandateCreate(MandateBase):
 class Mandate(MandateBase):
     """Full mandate with ID and timestamp."""
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
-    created_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 
 # ── Transaction ──────────────────────────────────────────────
@@ -87,7 +87,7 @@ class TransactionBase(BaseModel):
     merchant_name: str = Field(...)
     merchant_category: str = Field(...)
     item_description: str = Field(...)
-    timestamp: datetime = Field(default_factory=datetime.utcnow)
+    timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 
 class TransactionCreate(TransactionBase):
@@ -188,7 +188,7 @@ class Decision(DecisionBase):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     mandate_id: str = ""
     audit_id: Optional[str] = None
-    created_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 
 # ── Audit Log ────────────────────────────────────────────────
@@ -201,7 +201,7 @@ class ToolCallRecord(BaseModel):
     latency_ms: int = 0
     success: bool = True
     error: Optional[str] = None
-    timestamp: datetime = Field(default_factory=datetime.utcnow)
+    timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 
 class AuditLog(BaseModel):
@@ -222,7 +222,7 @@ class AuditLog(BaseModel):
     final_decision: Optional[str] = None
     explanation: Optional[str] = None
     latency_ms: int = 0
-    timestamp: datetime = Field(default_factory=datetime.utcnow)
+    timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 
 # ── API Response ─────────────────────────────────────────────
@@ -266,7 +266,7 @@ class EvaluationMetrics(BaseModel):
 class EvaluationReport(BaseModel):
     """Complete evaluation report comparing baselines."""
     run_id: str = Field(default_factory=lambda: str(uuid.uuid4()))
-    timestamp: datetime = Field(default_factory=datetime.utcnow)
+    timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     dataset_size: int
     baselines: List[EvaluationMetrics]
     summary: str

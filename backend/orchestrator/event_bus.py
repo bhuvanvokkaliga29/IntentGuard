@@ -9,7 +9,7 @@ import asyncio
 import json
 import logging
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any, AsyncGenerator, Dict, List, Optional, Set
 
 from backend.db import create_agent_event, get_session
@@ -36,7 +36,7 @@ class AgentTelemetryEvent:
         self.agent_id = agent_id
         self.stage = stage
         self.payload = payload
-        self.timestamp = timestamp or datetime.utcnow()
+        self.timestamp = timestamp or datetime.now(timezone.utc)
 
     def to_dict(self) -> Dict[str, Any]:
         return {

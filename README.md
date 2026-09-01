@@ -375,10 +375,12 @@ IntentGuard was evaluated against a **500-case deterministic benchmark dataset**
 
 ```bash
 python scripts/generate_dataset.py --seed 42 --count 500  # Generates 500 deterministic evaluation cases
-python scripts/evaluate.py --provider mock               # Executes benchmark evaluation against all 3 baselines
+python scripts/evaluate.py --provider gemini --limit 30  # Live LLM Performance Benchmark
+python scripts/evaluate.py --provider mock               # Offline Mock Benchmark (CI/Regression)
 ```
 
-### 📊 Benchmark Results Summary (from `docs/reports/evaluation_report.json`):
+### 📊 Offline Mock Benchmark Results (from `docs/reports/evaluation_report.json`):
+*Note: These numbers are generated using a keyword-matching simulator (`MockProvider`) to validate the deterministic pipeline. They do NOT constitute evidence of real LLM reasoning. See `docs/reports/evaluation_report_live.json` for live performance.*
 
 | Architecture | Description | Strict Accuracy | False-Allow Rate | False-Block Rate | Escalation Rate |
 |---|---|---|---|---|---|

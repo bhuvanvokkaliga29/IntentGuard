@@ -16,7 +16,7 @@ import json
 import os
 import re
 import sys
-from datetime import datetime
+from datetime import datetime, timezone
 
 # Root path adjustment
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -92,7 +92,7 @@ def audit_repository(root_dir: str, output_path: str):
 
     report = {
         "audit_name": "IntentGuard Automated Repository & Security Audit",
-        "timestamp": datetime.utcnow().isoformat(),
+        "timestamp": datetime.now(timezone.utc).isoformat(),
         "scanned_files_count": scanned_files,
         "findings_count": len(findings),
         "status": "PASS" if len(findings) == 0 else ("WARNING" if all(f["severity"] != "CRITICAL" for f in findings) else "FAIL"),

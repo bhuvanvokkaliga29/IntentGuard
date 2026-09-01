@@ -10,7 +10,7 @@ import json
 import logging
 import uuid
 import time
-from datetime import datetime
+from datetime import datetime, timezone
 from contextlib import asynccontextmanager
 from typing import Optional, List, Dict, Any
 
@@ -979,7 +979,7 @@ async def get_agent_health_endpoint():
             "total_runs_evaluated": metrics.get("total_runs", 0),
             "tool_success_rate": metrics.get("tool_success_rate", 1.0),
             "recovery_success_rate": metrics.get("recovery_success_rate", 1.0),
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": datetime.now(timezone.utc).isoformat(),
         }
 
 
