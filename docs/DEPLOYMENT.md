@@ -1,4 +1,4 @@
-# Prototype Deployment Guide
+# Deployment & Operations Guide
 
 ## 1. Local Development Setup
 ```bash

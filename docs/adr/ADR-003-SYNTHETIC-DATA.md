@@ -12,4 +12,4 @@ IntentGuard uses a **deterministic, seed-controlled synthetic dataset generator*
 ## Consequences
 - 100% reproducible benchmarks across runs with identical seeds.
 - Zero customer PII or confidential merchant data stored.
-- Explicit labeling as `SYNTHETIC BENCHMARK` / `PROTOTYPE` across all documentation and UI dashboards.
+- Explicit labeling as `SYNTHETIC BENCHMARK` across all documentation and UI dashboards.

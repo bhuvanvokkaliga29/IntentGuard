@@ -18,7 +18,7 @@ Financial authorization must be deterministic and reproducible. LLM outputs are 
 ### Principle 4: Zero Committed Secrets
 All API credentials, database URLs, and cryptographic keys are loaded dynamically from environment variables (`.env`). No secrets are committed to version control.
 
-### Principle 5: Prototype Authentication Scope
+### Principle 5: Identity & Authentication Integration Boundary
 For the scope of the Razorpay Buildathon, user authentication and JWT session validation are stubbed out to prioritize demonstrating the AI architectural boundaries. Production deployments must integrate a standard IdP (e.g. Auth0, AWS Cognito) to secure the API.
 
 ### Principle 6: Enterprise Secrets Management

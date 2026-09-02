@@ -98,7 +98,7 @@ export default function RootLayout({
               <span>·</span>
               <span>Track 5: Open Track</span>
               <span>·</span>
-              <span className="text-mist">Synthetic Benchmark Prototype</span>
+              <span className="text-mist">Deterministic Control Layer</span>
             </div>
             <div className="flex gap-6">
               <Link href="/architecture" className="hover:text-mist transition-colors">Security Boundaries</Link>

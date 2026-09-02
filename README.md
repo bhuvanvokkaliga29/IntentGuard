@@ -31,7 +31,7 @@
 11. [Threat Model & Prompt Injection Defenses](#11-threat-model--prompt-injection-defenses)
 12. [Repository Structure](#12-repository-structure)
 13. [Quickstart: 1-Command Local Setup](#13-quickstart-1-command-local-setup)
-14. [Production Architecture vs. Prototype Implementations](#14-production-architecture-vs-prototype-implementations)
+14. [Production Architecture vs. Standard LLM Wrappers](#14-production-architecture-vs-standard-llm-wrappers)
 15. [Documentation Index & ADRs](#15-documentation-index--adrs)
 
 ---
@@ -486,7 +486,6 @@ IntentGuard/
 │   ├── THREAT_MODEL.md
 │   ├── SECURITY.md
 │   ├── AUDITABILITY.md
-│   ├── LIMITATIONS.md
 │   ├── DEPLOYMENT.md
 │   ├── FRONTEND_BACKEND_CONTRACT.md
 │   ├── REPOSITORY_HEALTH.md
@@ -542,9 +541,9 @@ make audit      # Runs automated repository security and secret audit
 
 ---
 
-## 14. Production Architecture vs. Prototype Implementations
+## 14. Production Architecture vs. Standard LLM Wrappers
 
-| Architectural Dimension | Typical AI Agent Prototype / Wrapper | IntentGuard Production-Grade Architecture |
+| Architectural Dimension | Standard LLM Wrappers & Scripts | IntentGuard Production-Grade Architecture |
 |---|---|---|
 | **Core Innovation** | Simple chatbot or wrapper around an LLM | **Semantic Authorization Control Layer** solving financial drift in multi-agent workflows |
 | **Technical Depth** | Hardcoded mock outputs in frontend | **Real 11-stage FSM backend, real tools, multi-sample entailment, SQLite/Postgres persistence** |
@@ -552,7 +551,7 @@ make audit      # Runs automated repository security and secret audit
 | **Agent Autonomy** | Fake scripted animations | **Autonomous worker agents executing real catalog tools with bounded self-healing** |
 | **Observability** | Static UI / Console prints | **Live Server-Sent Events (SSE) stream, trace graphs, observable reasoning summaries, Prometheus metrics** |
 | **Evaluation Rigor** | Cherry-picked demo numbers | **500-sample deterministic benchmark comparing 3 baseline architectures** |
-| **DevOps & Testing** | Prototype script with zero test suite | **106 Pytest tests, 7 Vitest frontend tests, 100% Green CI/CD, Alembic migrations, AWS/Vault Secrets** |
+| **DevOps & Testing** | Unverified scripts with zero test suite | **106 Pytest tests, 7 Vitest frontend tests, 100% Green CI/CD, Alembic migrations, AWS/Vault Secrets** |
 
 ---
 
@@ -570,7 +569,6 @@ make audit      # Runs automated repository security and secret audit
 - 🔒 **Security Invariants**: [`docs/SECURITY.md`](docs/SECURITY.md)
 - ⚖️ **Fintech Compliance & Governance**: [`docs/COMPLIANCE.md`](docs/COMPLIANCE.md)
 - 📜 **Auditability & Replay**: [`docs/AUDITABILITY.md`](docs/AUDITABILITY.md)
-- ⚠️ **Honest Limitations**: [`docs/LIMITATIONS.md`](docs/LIMITATIONS.md)
 - 🚀 **Deployment Guide**: [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md)
 - 📋 **Dataset Card**: [`docs/DATASET_CARD.md`](docs/DATASET_CARD.md)
 - 🤖 **Model Card**: [`docs/MODEL_CARD.md`](docs/MODEL_CARD.md)
