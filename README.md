@@ -568,6 +568,7 @@ make audit      # Runs automated repository security and secret audit
 - 🔌 **REST API Specification**: [`docs/API.md`](docs/API.md)
 - 🛡️ **Threat Model & Security Matrix**: [`docs/THREAT_MODEL.md`](docs/THREAT_MODEL.md)
 - 🔒 **Security Invariants**: [`docs/SECURITY.md`](docs/SECURITY.md)
+- ⚖️ **Fintech Compliance & Governance**: [`docs/COMPLIANCE.md`](docs/COMPLIANCE.md)
 - 📜 **Auditability & Replay**: [`docs/AUDITABILITY.md`](docs/AUDITABILITY.md)
 - ⚠️ **Honest Limitations**: [`docs/LIMITATIONS.md`](docs/LIMITATIONS.md)
 - 🚀 **Deployment Guide**: [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md)
