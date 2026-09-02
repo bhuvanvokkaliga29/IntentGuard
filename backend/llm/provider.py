@@ -126,6 +126,7 @@ class MockProvider(LLMProvider):
 
         output = {
             "category": category,
+            "normalized_category": category,
             "item_type": item_type,
             "purpose_indicators": ["mock_indicator"],
             "recipient": "self",
