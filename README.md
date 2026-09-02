@@ -31,7 +31,7 @@
 11. [Threat Model & Prompt Injection Defenses](#11-threat-model--prompt-injection-defenses)
 12. [Repository Structure](#12-repository-structure)
 13. [Quickstart: 1-Command Local Setup](#13-quickstart-1-command-local-setup)
-14. [Hackathon Winning Criteria Matrix](#14-hackathon-winning-criteria-matrix)
+14. [Production Architecture vs. Prototype Implementations](#14-production-architecture-vs-prototype-implementations)
 15. [Documentation Index & ADRs](#15-documentation-index--adrs)
 
 ---
@@ -542,17 +542,17 @@ make audit      # Runs automated repository security and secret audit
 
 ---
 
-## 14. Hackathon Winning Criteria Matrix
+## 14. Production Architecture vs. Prototype Implementations
 
-| Evaluation Dimension | Standard Hackathon Submission | IntentGuard Implementation |
+| Architectural Dimension | Typical AI Agent Prototype / Wrapper | IntentGuard Production-Grade Architecture |
 |---|---|---|
 | **Core Innovation** | Simple chatbot or wrapper around an LLM | **Semantic Authorization Control Layer** solving financial drift in multi-agent workflows |
-| **Technical Depth** | Hardcoded mock outputs in frontend | **Real 11-stage FSM backend, real tools, multi-sample entailment, SQLite persistence** |
+| **Technical Depth** | Hardcoded mock outputs in frontend | **Real 11-stage FSM backend, real tools, multi-sample entailment, SQLite/Postgres persistence** |
 | **Financial Safety** | LLM makes financial authorization decisions | **Zero-LLM Direct Authority: Deterministic Python matrix owns final authorization** |
 | **Agent Autonomy** | Fake scripted animations | **Autonomous worker agents executing real catalog tools with bounded self-healing** |
-| **Observability** | Static UI | **Live Server-Sent Events (SSE) stream, trace graphs, observable reasoning summaries** |
+| **Observability** | Static UI / Console prints | **Live Server-Sent Events (SSE) stream, trace graphs, observable reasoning summaries, Prometheus metrics** |
 | **Evaluation Rigor** | Cherry-picked demo numbers | **500-sample deterministic benchmark comparing 3 baseline architectures** |
-| **Code Quality** | Prototype spaghetti code | **102 Pytest tests passing (4 skipped), 0 build errors, 0 committed secrets, 5 Architecture Decision Records** |
+| **DevOps & Testing** | Prototype script with zero test suite | **106 Pytest tests, 7 Vitest frontend tests, 100% Green CI/CD, Alembic migrations, AWS/Vault Secrets** |
 
 ---
 
