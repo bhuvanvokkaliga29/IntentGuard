@@ -20,3 +20,10 @@ All API credentials, database URLs, and cryptographic keys are loaded dynamicall
 
 ### Principle 5: Prototype Authentication Scope
 For the scope of the Razorpay Buildathon, user authentication and JWT session validation are stubbed out to prioritize demonstrating the AI architectural boundaries. Production deployments must integrate a standard IdP (e.g. Auth0, AWS Cognito) to secure the API.
+
+### Principle 6: Enterprise Secrets Management
+To support high-assurance banking and enterprise deployments beyond local `.env` files, IntentGuard implements a pluggable `SecretsProvider` in `backend/security/secrets.py`:
+- **Local Environment (`EnvSecretsProvider`)**: Reads from `.env` and `os.environ` during development and containerized testing.
+- **AWS Secrets Manager (`AWSSecretsManagerProvider`)**: Automatically fetches versioned API credentials and signing keys using AWS SDK / IAM roles.
+- **HashiCorp Vault (`VaultSecretsProvider`)**: Integrates with Vault KV v2 secret engines using AppRole / Token authentication for zero-trust environments.
+- **Resilient Fallback**: In the event of cloud network partition, providers fall back to configured local environment overrides with structured logging.
