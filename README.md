@@ -4,8 +4,14 @@
 > **Razorpay AI Buildathon 2026 · Track 5 — Open Track**
 > *Control infrastructure for autonomous financial agents: verifying that agent proposals remain within authorized spending scope before financial execution.*
 
+> [!IMPORTANT]
+> 📁 **Official Submission Deliverables (Drive Link):**  
+> All primary submission collateral — including the **Pitch Video**, **Presentation Slides (PPT)**, **High-Resolution Architecture Diagram**, and **Engineering Report** — are accessible here:  
+> 🔗 **[Open IntentGuard Submission Drive Folder](https://drive.google.com/drive/folders/1AIyxBjPHNvt34e-GSlBprti9K33sl2ij?usp=sharing)**
+
 ---
 
+[![Submission Deliverables](https://img.shields.io/badge/Google%20Drive-Pitch%20Video%20%7C%20PPT%20%7C%20Report%20%7C%20Diagram-blue?logo=googledrive&logoColor=white)](https://drive.google.com/drive/folders/1AIyxBjPHNvt34e-GSlBprti9K33sl2ij?usp=sharing)
 [![CI/CD Pipeline](https://github.com/bhuvanvokkaliga29/IntentGuard/actions/workflows/ci.yml/badge.svg)](https://github.com/bhuvanvokkaliga29/IntentGuard/actions)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Tests: 155 Passed](https://img.shields.io/badge/Tests-155%20Passed-brightgreen.svg)](docs/REPOSITORY_HEALTH.md)
