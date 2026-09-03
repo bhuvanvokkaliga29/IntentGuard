@@ -71,13 +71,13 @@ jobs:
           alembic current
           alembic upgrade head
 
-      - name: Run 106 Automated Pytest Unit Tests
+      - name: Run 155 Automated Pytest Unit Tests
         env:
           LLM_PROVIDER: mock
         run: |
           python -m pytest backend/tests/ -v
 
-      - name: Run 8-Step End-to-End Smoke Test
+      - name: Run 9-Step End-to-End Smoke Test
         env:
           LLM_PROVIDER: mock
         run: |
