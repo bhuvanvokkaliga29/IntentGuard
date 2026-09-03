@@ -169,6 +169,25 @@ export default function AgentLabPage() {
         setExecutionResult(res);
         setCurrentRunId(res.run_id);
         setCurrentStage(res.status === "COMPLETED" ? "COMPLETED" : "FAILED");
+
+        if (res.intentguard_decision?.final_decision === "ALLOW" && res.intentguard_decision?.razorpay_order_id) {
+          const options = {
+            key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || "rzp_test_TXQDKcWMufqZhb",
+            amount: res.proposal?.price ? res.proposal.price * 100 : 10000,
+            currency: "INR",
+            name: "IntentGuard Execution",
+            description: "Authorized Agent Transaction",
+            order_id: res.intentguard_decision.razorpay_order_id,
+            handler: function (response: any) {
+              alert("Payment Executed! Razorpay Payment ID: " + response.razorpay_payment_id);
+            },
+            theme: {
+              color: "#E4F222"
+            }
+          };
+          const rzp = new (window as any).Razorpay(options);
+          rzp.open();
+        }
       }
       await loadHistoryAndMetrics();
     } catch (err) {

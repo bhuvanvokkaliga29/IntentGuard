@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Inter, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import Link from "next/link";
+import Script from "next/script";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -27,7 +28,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
+      <head>
+      </head>
       <body className={`${inter.variable} ${jetbrainsMono.variable} antialiased min-h-screen flex flex-col bg-void text-mist selection:bg-acid-lime/30 selection:text-void`}>
+        <Script src="https://checkout.razorpay.com/v1/checkout.js" strategy="beforeInteractive" />
         {/* Navigation - Dark Console Top Bar */}
         <header className="sticky top-0 z-50 w-full bg-void/90 backdrop-blur-md border-b border-graphite/60">
           <div className="max-w-[1400px] mx-auto px-6 h-16 flex items-center justify-between">

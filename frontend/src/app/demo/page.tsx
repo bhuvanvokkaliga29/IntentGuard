@@ -113,6 +113,27 @@ export default function LiveDemoPage() {
           decision: evalData,
           transaction: txn,
         });
+
+        // Trigger Razorpay on ALLOW
+        if (evalData.final_decision === "ALLOW" && evalData.razorpay_order_id) {
+          const options = {
+            key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || "rzp_test_TXQDKcWMufqZhb",
+            amount: parseFloat(amount) * 100,
+            currency: "INR",
+            name: "IntentGuard Execution",
+            description: "Authorized Agent Transaction",
+            order_id: evalData.razorpay_order_id,
+            handler: function (response: any) {
+              alert("Payment Executed! Razorpay Payment ID: " + response.razorpay_payment_id);
+            },
+            theme: {
+              color: "#E4F222"
+            }
+          };
+          const rzp = new (window as any).Razorpay(options);
+          rzp.open();
+        }
+
       } else {
         // Safe fallback
         setSimResult({

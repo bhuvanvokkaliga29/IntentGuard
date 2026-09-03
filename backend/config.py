@@ -26,6 +26,10 @@ class Settings(BaseSettings):
     xai_api_key: Optional[str] = Field(default=None)
     xai_model: str = Field(default="grok-3-mini")
 
+    # ── Razorpay ──────────────────────────────────────────────
+    razorpay_key_id: Optional[str] = Field(default=None, description="Razorpay API Key ID")
+    razorpay_key_secret: Optional[str] = Field(default=None, description="Razorpay API Key Secret")
+
     # ── Database ──────────────────────────────────────────────
     database_url: str = Field(
         default="sqlite+aiosqlite:///./intentguard.db",

@@ -503,6 +503,16 @@ async def run_live_simulation(req: SimulateRequest):
             mandate_id=mandate["id"],
         )
 
+    if result.get("final_decision") == "ALLOW":
+        from backend.execution.razorpay_gateway import get_razorpay_gateway
+        gateway = get_razorpay_gateway()
+        rzp_res = gateway.create_order(
+            amount=txn_dict.get("amount", 100.0),
+            receipt=f"receipt_{txn_id[:8]}"
+        )
+        if rzp_res.get("success"):
+            result["razorpay_order_id"] = rzp_res.get("order_id")
+
     # 4. Construct detailed step-by-step animation trace
     timeline_steps = [
         {"step": 1, "actor": "USER", "name": "User Mandate Ingested", "status": "COMPLETED", "detail": mandate["intent_text"]},
@@ -604,6 +614,21 @@ async def evaluate_transaction_endpoint(req: EvaluateRequest):
 
         if isinstance(result, dict) and result.get("error") and result.get("decision_id") is None:
             raise HTTPException(status_code=500, detail=result["error"])
+
+        if result.get("final_decision") == "ALLOW":
+            from backend.execution.razorpay_gateway import get_razorpay_gateway
+            from backend.db import get_transaction
+            
+            txn_row = await get_transaction(session, req.transaction_id)
+            txn_amount = txn_row.amount if txn_row else 100.0
+            
+            gateway = get_razorpay_gateway()
+            rzp_res = gateway.create_order(
+                amount=txn_amount,
+                receipt=f"receipt_{req.transaction_id[:8]}"
+            )
+            if rzp_res.get("success"):
+                result["razorpay_order_id"] = rzp_res.get("order_id")
 
         return result
 

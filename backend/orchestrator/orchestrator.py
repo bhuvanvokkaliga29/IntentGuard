@@ -13,6 +13,7 @@ from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
 from backend.orchestrator.evaluator import evaluate_transaction
+from backend.execution.razorpay_gateway import get_razorpay_gateway
 from backend.agent.self_healing import get_self_healing_engine
 from backend.agent.tools import get_tool_registry
 from backend.db import (
@@ -353,6 +354,15 @@ class AgentOrchestrator:
                 )
 
             decision_outcome = guard_result.get("final_decision", "FLAG")
+
+            if decision_outcome == "ALLOW":
+                gateway = get_razorpay_gateway()
+                rzp_res = gateway.create_order(
+                    amount=selected_item.get("price", 100.0),
+                    receipt=f"receipt_{run_id[:8]}"
+                )
+                if rzp_res.get("success"):
+                    guard_result["razorpay_order_id"] = rzp_res.get("order_id")
 
             await self.event_bus.publish(
                 event_type="intentguard.decision.created",
