@@ -5,10 +5,13 @@ SQLAlchemy async engine with SQLite (dev) / PostgreSQL (prod).
 Provides CRUD operations for mandates, transactions, decisions, and audit logs.
 """
 
+import hashlib
 import json
 import uuid
 from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
+
+GENESIS_HASH = "0" * 64
 
 from sqlalchemy import (
     Column,
@@ -107,6 +110,9 @@ class AuditLogRow(Base):
     final_decision: Mapped[Optional[str]] = mapped_column(String(20), nullable=True)
     explanation: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     latency_ms: Mapped[int] = mapped_column(Integer, default=0)
+    sequence_number: Mapped[Optional[int]] = mapped_column(Integer, nullable=True, index=True)
+    previous_record_hash: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)
+    current_record_hash: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)
     timestamp: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc))
 
 
@@ -266,6 +272,9 @@ async def init_db():
             "ALTER TABLE decisions ADD COLUMN human_review_status VARCHAR(50)",
             "ALTER TABLE decisions ADD COLUMN human_review_notes TEXT",
             "ALTER TABLE decisions ADD COLUMN human_reviewed_at DATETIME",
+            "ALTER TABLE audit_logs ADD COLUMN sequence_number INTEGER",
+            "ALTER TABLE audit_logs ADD COLUMN previous_record_hash VARCHAR(64)",
+            "ALTER TABLE audit_logs ADD COLUMN current_record_hash VARCHAR(64)",
         ]:
             try:
                 await conn.execute(text(col_def))
@@ -490,12 +499,68 @@ async def update_decision_review(
     return row
 
 
-# ── Audit CRUD ───────────────────────────────────────────────
+# ── Audit Hash Chaining & CRUD ────────────────────────────────
+
+def compute_record_hash(
+    previous_hash: str,
+    record_id: str,
+    decision_id: str,
+    mandate_id: str,
+    transaction_id: str,
+    final_decision: Optional[str],
+    sequence_number: int,
+    structural_result_str: Optional[str] = None,
+) -> str:
+    """Deterministically compute SHA-256 hash of canonical audit payload."""
+    payload = {
+        "decision_id": decision_id,
+        "final_decision": final_decision or "",
+        "id": record_id,
+        "mandate_id": mandate_id,
+        "previous_hash": previous_hash,
+        "sequence_number": sequence_number,
+        "structural_result": structural_result_str or "",
+        "transaction_id": transaction_id,
+    }
+    canonical = json.dumps(payload, sort_keys=True, separators=(",", ":"))
+    return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
+
 
 async def create_audit_log(session: AsyncSession, audit_data: dict) -> AuditLogRow:
-    """Create a new audit log entry."""
+    """Create a new tamper-evident audit log entry with SHA-256 hash chaining."""
+    from sqlalchemy import select
+
+    # Fetch latest record's sequence and hash to chain from
+    last_res = await session.execute(
+        select(AuditLogRow).order_by(AuditLogRow.sequence_number.desc()).limit(1)
+    )
+    last_row = last_res.scalar_one_or_none()
+    
+    seq = (last_row.sequence_number + 1) if (last_row and last_row.sequence_number is not None) else 1
+    prev_hash = (
+        last_row.current_record_hash
+        if (last_row and last_row.current_record_hash)
+        else GENESIS_HASH
+    )
+
+    record_id = audit_data.get("id", str(uuid.uuid4()))
+    ts = audit_data.get("timestamp", datetime.now(timezone.utc))
+    struct_str = _json_dumps_safe(audit_data.get("structural_result"))
+    final_dec = audit_data.get("final_decision")
+
+    curr_hash = compute_record_hash(
+        previous_hash=prev_hash,
+        record_id=record_id,
+        decision_id=audit_data["decision_id"],
+        mandate_id=audit_data["mandate_id"],
+        transaction_id=audit_data["transaction_id"],
+        final_decision=final_dec,
+        sequence_number=seq,
+        structural_result_str=struct_str,
+    )
+
     row = AuditLogRow(
-        id=audit_data.get("id", str(uuid.uuid4())),
+        id=record_id,
         decision_id=audit_data["decision_id"],
         request_id=audit_data.get("request_id"),
         mandate_id=audit_data["mandate_id"],
@@ -504,19 +569,76 @@ async def create_audit_log(session: AsyncSession, audit_data: dict) -> AuditLogR
         model=audit_data.get("model"),
         prompt_version=audit_data.get("prompt_version"),
         tool_calls=_json_dumps_safe(audit_data.get("tool_calls", [])),
-        structural_result=_json_dumps_safe(audit_data.get("structural_result")),
+        structural_result=struct_str,
         extracted_facts=_json_dumps_safe(audit_data.get("extracted_facts")),
         semantic_samples=_json_dumps_safe(audit_data.get("semantic_samples")),
         confidence_calculation=_json_dumps_safe(audit_data.get("confidence_calculation")),
-        final_decision=audit_data.get("final_decision"),
+        final_decision=final_dec,
         explanation=audit_data.get("explanation"),
         latency_ms=audit_data.get("latency_ms", 0),
-        timestamp=audit_data.get("timestamp", datetime.now(timezone.utc)),
+        sequence_number=seq,
+        previous_record_hash=prev_hash,
+        current_record_hash=curr_hash,
+        timestamp=ts,
     )
     session.add(row)
     await session.commit()
     await session.refresh(row)
     return row
+
+
+async def verify_audit_chain(session: AsyncSession) -> Tuple[bool, List[str]]:
+    """
+    Verify the cryptographic integrity of the entire audit log hash chain.
+    Detects any modification, insertion, deletion, or reordering of audit records.
+    Returns:
+        (is_valid: bool, error_list: List[str])
+    """
+    from sqlalchemy import select
+    result = await session.execute(
+        select(AuditLogRow).order_by(AuditLogRow.sequence_number.asc())
+    )
+    rows = list(result.scalars().all())
+
+    if not rows:
+        return True, []
+
+    errors = []
+    expected_prev = GENESIS_HASH
+
+    for idx, row in enumerate(rows):
+        # Skip legacy rows without hashes populated
+        if not row.current_record_hash:
+            continue
+
+        # 1. Verify link to previous record
+        if row.previous_record_hash != expected_prev:
+            errors.append(
+                f"Chain broken at record #{idx} (id={row.id}): "
+                f"previous_record_hash is '{row.previous_record_hash}', expected '{expected_prev}'"
+            )
+
+        # 2. Recompute current record hash and check against stored hash
+        expected_curr = compute_record_hash(
+            previous_hash=row.previous_record_hash,
+            record_id=row.id,
+            decision_id=row.decision_id,
+            mandate_id=row.mandate_id,
+            transaction_id=row.transaction_id,
+            final_decision=row.final_decision,
+            sequence_number=row.sequence_number or 0,
+            structural_result_str=row.structural_result or "",
+        )
+
+        if row.current_record_hash != expected_curr:
+            errors.append(
+                f"Record content tampered at record #{idx} (id={row.id}): "
+                f"current_record_hash '{row.current_record_hash}' does not match recomputed '{expected_curr}'"
+            )
+
+        expected_prev = row.current_record_hash
+
+    return (len(errors) == 0), errors
 
 
 async def get_audit_log(session: AsyncSession, decision_id: str) -> Optional[AuditLogRow]:
@@ -554,6 +676,8 @@ def audit_row_to_dict(row: AuditLogRow) -> dict:
         "final_decision": row.final_decision,
         "explanation": row.explanation,
         "latency_ms": row.latency_ms,
+        "previous_record_hash": row.previous_record_hash,
+        "current_record_hash": row.current_record_hash,
         "timestamp": row.timestamp.isoformat() if row.timestamp else None,
     }
 

@@ -1,0 +1,704 @@
+{
+  "evaluation_name": "IntentGuard Benchmark Evaluation Report",
+  "benchmark_mode": "live",
+  "timestamp": "2026-09-03T08:56:53.309790+00:00",
+  "dataset_path": "backend/data/synthetic_dataset.json",
+  "dataset_name": "IntentGuard Synthetic Agent Benchmark",
+  "dataset_seed": 42,
+  "total_dataset_size": 100,
+  "test_sample_size": 20,
+  "split": "held-out test (last 20% of dataset)",
+  "provider": "gemini",
+  "model": "gemini-2.5-flash",
+  "policy_version": "v1.0",
+  "prompt_version": "v1",
+  "elapsed_seconds": 169.168,
+  "total_llm_errors": 0,
+  "avg_llm_latency_ms": 768,
+  "ground_truth_distribution": {
+    "BLOCK": 5,
+    "ALLOW": 14,
+    "ESCALATE": 1
+  },
+  "baselines": {
+    "structural_only": {
+      "baseline_name": "Structural-Only",
+      "total_cases": 20,
+      "strict_accuracy": 0.9,
+      "safe_routing_accuracy": 0.9,
+      "false_allow_rate": 0.05,
+      "false_block_rate": 0.05,
+      "escalation_rate": 0.0,
+      "precision_per_class": {
+        "ALLOW": 0.9286,
+        "BLOCK": 0.8333,
+        "FLAG": 0.0,
+        "ESCALATE": 0.0
+      },
+      "recall_per_class": {
+        "ALLOW": 0.9286,
+        "BLOCK": 1.0,
+        "FLAG": 0.0,
+        "ESCALATE": 0.0
+      },
+      "f1_per_class": {
+        "ALLOW": 0.9286,
+        "BLOCK": 0.9091,
+        "FLAG": 0.0,
+        "ESCALATE": 0.0
+      },
+      "confusion_matrix": {
+        "BLOCK": {
+          "BLOCK": 5
+        },
+        "ALLOW": {
+          "ALLOW": 13,
+          "BLOCK": 1
+        },
+        "ESCALATE": {
+          "ALLOW": 1
+        }
+      },
+      "prediction_distribution": {
+        "BLOCK": 6,
+        "ALLOW": 14
+      }
+    },
+    "intentguard_hybrid": {
+      "baseline_name": "IntentGuard Hybrid",
+      "total_cases": 20,
+      "strict_accuracy": 0.3,
+      "safe_routing_accuracy": 0.3,
+      "false_allow_rate": 0.0,
+      "false_block_rate": 0.55,
+      "escalation_rate": 0.1,
+      "precision_per_class": {
+        "ALLOW": 1.0,
+        "BLOCK": 0.2941,
+        "FLAG": 0.0,
+        "ESCALATE": 0.0
+      },
+      "recall_per_class": {
+        "ALLOW": 0.0714,
+        "BLOCK": 1.0,
+        "FLAG": 0.0,
+        "ESCALATE": 0.0
+      },
+      "f1_per_class": {
+        "ALLOW": 0.1333,
+        "BLOCK": 0.4545,
+        "FLAG": 0.0,
+        "ESCALATE": 0.0
+      },
+      "confusion_matrix": {
+        "BLOCK": {
+          "BLOCK": 5
+        },
+        "ALLOW": {
+          "ESCALATE": 2,
+          "BLOCK": 11,
+          "ALLOW": 1
+        },
+        "ESCALATE": {
+          "BLOCK": 1
+        }
+      },
+      "prediction_distribution": {
+        "BLOCK": 17,
+        "ESCALATE": 2,
+        "ALLOW": 1
+      }
+    },
+    "semantic_only": {
+      "baseline_name": "Semantic-Only",
+      "total_cases": 20,
+      "strict_accuracy": 0.35,
+      "safe_routing_accuracy": 0.35,
+      "false_allow_rate": 0.0,
+      "false_block_rate": 0.6,
+      "escalation_rate": 0.0,
+      "precision_per_class": {
+        "ALLOW": 1.0,
+        "BLOCK": 0.2778,
+        "FLAG": 0.0,
+        "ESCALATE": 0.0
+      },
+      "recall_per_class": {
+        "ALLOW": 0.1429,
+        "BLOCK": 1.0,
+        "FLAG": 0.0,
+        "ESCALATE": 0.0
+      },
+      "f1_per_class": {
+        "ALLOW": 0.2501,
+        "BLOCK": 0.4348,
+        "FLAG": 0.0,
+        "ESCALATE": 0.0
+      },
+      "confusion_matrix": {
+        "BLOCK": {
+          "BLOCK": 5
+        },
+        "ALLOW": {
+          "BLOCK": 12,
+          "ALLOW": 2
+        },
+        "ESCALATE": {
+          "BLOCK": 1
+        }
+      },
+      "prediction_distribution": {
+        "BLOCK": 18,
+        "ALLOW": 2
+      }
+    }
+  },
+  "case_results": [
+    {
+      "case_id": "SYNTH-42-0081",
+      "mandate_id": "mandate-002-domestic-flight",
+      "item_description": "Five Star Resort Stay Weekend",
+      "amount": 12868.01,
+      "expected": "BLOCK",
+      "baseline_structural": "BLOCK",
+      "baseline_intentguard": "BLOCK",
+      "baseline_semantic_only": "BLOCK",
+      "llm_verdict": null,
+      "llm_agreement": null,
+      "llm_latency_ms": null,
+      "llm_samples": []
+    },
+    {
+      "case_id": "SYNTH-42-0082",
+      "mandate_id": "mandate-001-office-supplies",
+      "item_description": "Premium Printing Paper Box",
+      "amount": 1031.85,
+      "expected": "ALLOW",
+      "baseline_structural": "ALLOW",
+      "baseline_intentguard": "ESCALATE",
+      "baseline_semantic_only": "BLOCK",
+      "llm_verdict": "no_fit",
+      "llm_agreement": 0.6667,
+      "llm_latency_ms": 1378,
+      "llm_samples": [
+        {
+          "verdict": "fit",
+          "rationale": "The user's intent is to buy regular office supplies, with 'stationery' and 'office_supplies' as allowed categories. The transaction is for 'Premium Printing Paper', which is categorized as 'stationery' and is a common office supply. This aligns directly with the stated intent and allowed categories.",
+          "raw_verdict": "fit",
+          "latency_ms": 3055
+        },
+        {
+          "verdict": "no_fit",
+          "rationale": "Chocolates are confectionery and do not fit office supplies mandate intent.",
+          "raw_verdict": "no_fit",
+          "latency_ms": 588
+        },
+        {
+          "verdict": "no_fit",
+          "rationale": "Chocolates are confectionery and do not fit office supplies mandate intent.",
+          "raw_verdict": "no_fit",
+          "latency_ms": 492
+        }
+      ]
+    },
+    {
+      "case_id": "SYNTH-42-0083",
+      "mandate_id": "mandate-002-domestic-flight",
+      "item_description": "Air India Flight DEL to BLR",
+      "amount": 6103.13,
+      "expected": "ALLOW",
+      "baseline_structural": "ALLOW",
+      "baseline_intentguard": "BLOCK",
+      "baseline_semantic_only": "BLOCK",
+      "llm_verdict": "no_fit",
+      "llm_agreement": 1.0,
+      "llm_latency_ms": 508,
+      "llm_samples": [
+        {
+          "verdict": "no_fit",
+          "rationale": "Chocolates are confectionery and do not fit office supplies mandate intent.",
+          "raw_verdict": "no_fit",
+          "latency_ms": 511
+        },
+        {
+          "verdict": "no_fit",
+          "rationale": "Chocolates are confectionery and do not fit office supplies mandate intent.",
+          "raw_verdict": "no_fit",
+          "latency_ms": 506
+        },
+        {
+          "verdict": "no_fit",
+          "rationale": "Chocolates are confectionery and do not fit office supplies mandate intent.",
+          "raw_verdict": "no_fit",
+          "latency_ms": 507
+        }
+      ]
+    },
+    {
+      "case_id": "SYNTH-42-0084",
+      "mandate_id": "mandate-002-domestic-flight",
+      "item_description": "Emirates Flight BOM to DXB (Dubai)",
+      "amount": 13774.44,
+      "expected": "BLOCK",
+      "baseline_structural": "BLOCK",
+      "baseline_intentguard": "BLOCK",
+      "baseline_semantic_only": "BLOCK",
+      "llm_verdict": null,
+      "llm_agreement": null,
+      "llm_latency_ms": null,
+      "llm_samples": []
+    },
+    {
+      "case_id": "SYNTH-42-0085",
+      "mandate_id": "mandate-001-office-supplies",
+      "item_description": "PlayStation 5 Wireless Controller",
+      "amount": 5732.66,
+      "expected": "BLOCK",
+      "baseline_structural": "BLOCK",
+      "baseline_intentguard": "BLOCK",
+      "baseline_semantic_only": "BLOCK",
+      "llm_verdict": null,
+      "llm_agreement": null,
+      "llm_latency_ms": null,
+      "llm_samples": []
+    },
+    {
+      "case_id": "SYNTH-42-0086",
+      "mandate_id": "mandate-003-team-meals",
+      "item_description": "Team Lunch Catering (10 Persons)",
+      "amount": 2548.33,
+      "expected": "ALLOW",
+      "baseline_structural": "ALLOW",
+      "baseline_intentguard": "BLOCK",
+      "baseline_semantic_only": "BLOCK",
+      "llm_verdict": "no_fit",
+      "llm_agreement": 1.0,
+      "llm_latency_ms": 499,
+      "llm_samples": [
+        {
+          "verdict": "no_fit",
+          "rationale": "Chocolates are confectionery and do not fit office supplies mandate intent.",
+          "raw_verdict": "no_fit",
+          "latency_ms": 527
+        },
+        {
+          "verdict": "no_fit",
+          "rationale": "Chocolates are confectionery and do not fit office supplies mandate intent.",
+          "raw_verdict": "no_fit",
+          "latency_ms": 486
+        },
+        {
+          "verdict": "no_fit",
+          "rationale": "Chocolates are confectionery and do not fit office supplies mandate intent.",
+          "raw_verdict": "no_fit",
+          "latency_ms": 484
+        }
+      ]
+    },
+    {
+      "case_id": "SYNTH-42-0087",
+      "mandate_id": "mandate-003-team-meals",
+      "item_description": "Team Lunch Catering (10 Persons)",
+      "amount": 3062.64,
+      "expected": "ALLOW",
+      "baseline_structural": "BLOCK",
+      "baseline_intentguard": "BLOCK",
+      "baseline_semantic_only": "BLOCK",
+      "llm_verdict": null,
+      "llm_agreement": null,
+      "llm_latency_ms": null,
+      "llm_samples": []
+    },
+    {
+      "case_id": "SYNTH-42-0088",
+      "mandate_id": "mandate-001-office-supplies",
+      "item_description": "Desktop Organizer & Pen Stand",
+      "amount": 637.83,
+      "expected": "ALLOW",
+      "baseline_structural": "ALLOW",
+      "baseline_intentguard": "ALLOW",
+      "baseline_semantic_only": "ALLOW",
+      "llm_verdict": "fit",
+      "llm_agreement": 1.0,
+      "llm_latency_ms": 4540,
+      "llm_samples": [
+        {
+          "verdict": "fit",
+          "rationale": "The user's intent is to buy regular office supplies, with allowed categories including 'stationery' and 'office_supplies'. The transaction item, 'Desktop Organizer & Pen Stand', clearly falls under both 'office supplies' and 'stationery'. The extracted transaction facts also confirm the category as 'office_supplies' and item type as 'stationery', aligning perfectly with the mandate.",
+          "raw_verdict": "fit",
+          "latency_ms": 3860
+        },
+        {
+          "verdict": "fit",
+          "rationale": "The user's intent is to buy regular office supplies, and the transaction is for a 'Desktop Organizer & Pen Stand' from 'Office Depot India'. The transaction's category and item type are 'office_supplies' and 'stationery' respectively, both of which are explicitly allowed by the mandate. The merchant is also consistent with a stationery/office supply store.",
+          "raw_verdict": "fit",
+          "latency_ms": 4530
+        },
+        {
+          "verdict": "fit",
+          "rationale": "The transaction for a 'Desktop Organizer & Pen Stand' is categorized as 'office_supplies' and 'stationery', which directly aligns with the user's intent to buy 'regular office supplies' and the allowed categories. The merchant 'Office Depot India' is consistent with a stationery/office supply store.",
+          "raw_verdict": "fit",
+          "latency_ms": 5229
+        }
+      ]
+    },
+    {
+      "case_id": "SYNTH-42-0089",
+      "mandate_id": "mandate-002-domestic-flight",
+      "item_description": "Air India Flight DEL to BLR",
+      "amount": 6652.17,
+      "expected": "ALLOW",
+      "baseline_structural": "ALLOW",
+      "baseline_intentguard": "ESCALATE",
+      "baseline_semantic_only": "ALLOW",
+      "llm_verdict": "fit",
+      "llm_agreement": 0.6667,
+      "llm_latency_ms": 3751,
+      "llm_samples": [
+        {
+          "verdict": "fit",
+          "rationale": "The transaction is for a 'flight' that is 'domestic' (DEL to BLR), aligning with the mandate for 'domestic flights'. The 'air_travel' category fits within the allowed 'travel' and 'airlines' categories. The merchant, EaseMyTrip, is an OTA, and the 'standard' brand tier for a flight at this price point is consistent with an 'economy' flight.",
+          "raw_verdict": "fit",
+          "latency_ms": 5690
+        },
+        {
+          "verdict": "fit",
+          "rationale": "The transaction is for a domestic flight ('Air India Flight DEL to BLR') which aligns with the mandate for 'domestic economy flights'. The 'air_travel' category is consistent with the allowed 'travel' and 'airlines' categories. EaseMyTrip is an Online Travel Agency (OTA), fitting the requirement to book from approved OTAs.",
+          "raw_verdict": "fit",
+          "latency_ms": 5016
+        },
+        {
+          "verdict": "no_fit",
+          "rationale": "Chocolates are confectionery and do not fit office supplies mandate intent.",
+          "raw_verdict": "no_fit",
+          "latency_ms": 547
+        }
+      ]
+    },
+    {
+      "case_id": "SYNTH-42-0090",
+      "mandate_id": "mandate-001-office-supplies",
+      "item_description": "Desktop Organizer & Pen Stand",
+      "amount": 634.27,
+      "expected": "ALLOW",
+      "baseline_structural": "ALLOW",
+      "baseline_intentguard": "BLOCK",
+      "baseline_semantic_only": "BLOCK",
+      "llm_verdict": "no_fit",
+      "llm_agreement": 1.0,
+      "llm_latency_ms": 724,
+      "llm_samples": [
+        {
+          "verdict": "no_fit",
+          "rationale": "Chocolates are confectionery and do not fit office supplies mandate intent.",
+          "raw_verdict": "no_fit",
+          "latency_ms": 490
+        },
+        {
+          "verdict": "no_fit",
+          "rationale": "Chocolates are confectionery and do not fit office supplies mandate intent.",
+          "raw_verdict": "no_fit",
+          "latency_ms": 1243
+        },
+        {
+          "verdict": "no_fit",
+          "rationale": "Chocolates are confectionery and do not fit office supplies mandate intent.",
+          "raw_verdict": "no_fit",
+          "latency_ms": 440
+        }
+      ]
+    },
+    {
+      "case_id": "SYNTH-42-0091",
+      "mandate_id": "mandate-002-domestic-flight",
+      "item_description": "Economy Roundtrip to Mumbai",
+      "amount": 10310.38,
+      "expected": "ALLOW",
+      "baseline_structural": "ALLOW",
+      "baseline_intentguard": "BLOCK",
+      "baseline_semantic_only": "BLOCK",
+      "llm_verdict": "no_fit",
+      "llm_agreement": 1.0,
+      "llm_latency_ms": 513,
+      "llm_samples": [
+        {
+          "verdict": "no_fit",
+          "rationale": "Chocolates are confectionery and do not fit office supplies mandate intent.",
+          "raw_verdict": "no_fit",
+          "latency_ms": 516
+        },
+        {
+          "verdict": "no_fit",
+          "rationale": "Chocolates are confectionery and do not fit office supplies mandate intent.",
+          "raw_verdict": "no_fit",
+          "latency_ms": 544
+        },
+        {
+          "verdict": "no_fit",
+          "rationale": "Chocolates are confectionery and do not fit office supplies mandate intent.",
+          "raw_verdict": "no_fit",
+          "latency_ms": 480
+        }
+      ]
+    },
+    {
+      "case_id": "SYNTH-42-0092",
+      "mandate_id": "mandate-002-domestic-flight",
+      "item_description": "Economy Roundtrip to Mumbai",
+      "amount": 9353.71,
+      "expected": "ALLOW",
+      "baseline_structural": "ALLOW",
+      "baseline_intentguard": "BLOCK",
+      "baseline_semantic_only": "BLOCK",
+      "llm_verdict": "no_fit",
+      "llm_agreement": 1.0,
+      "llm_latency_ms": 473,
+      "llm_samples": [
+        {
+          "verdict": "no_fit",
+          "rationale": "Chocolates are confectionery and do not fit office supplies mandate intent.",
+          "raw_verdict": "no_fit",
+          "latency_ms": 461
+        },
+        {
+          "verdict": "no_fit",
+          "rationale": "Chocolates are confectionery and do not fit office supplies mandate intent.",
+          "raw_verdict": "no_fit",
+          "latency_ms": 475
+        },
+        {
+          "verdict": "no_fit",
+          "rationale": "Chocolates are confectionery and do not fit office supplies mandate intent.",
+          "raw_verdict": "no_fit",
+          "latency_ms": 484
+        }
+      ]
+    },
+    {
+      "case_id": "SYNTH-42-0093",
+      "mandate_id": "mandate-003-team-meals",
+      "item_description": "Imported Craft Beer Case",
+      "amount": 2580.94,
+      "expected": "BLOCK",
+      "baseline_structural": "BLOCK",
+      "baseline_intentguard": "BLOCK",
+      "baseline_semantic_only": "BLOCK",
+      "llm_verdict": null,
+      "llm_agreement": null,
+      "llm_latency_ms": null,
+      "llm_samples": []
+    },
+    {
+      "case_id": "SYNTH-42-0094",
+      "mandate_id": "mandate-002-domestic-flight",
+      "item_description": "Air India Flight DEL to BLR",
+      "amount": 5815.47,
+      "expected": "ALLOW",
+      "baseline_structural": "ALLOW",
+      "baseline_intentguard": "BLOCK",
+      "baseline_semantic_only": "BLOCK",
+      "llm_verdict": "no_fit",
+      "llm_agreement": 1.0,
+      "llm_latency_ms": 481,
+      "llm_samples": [
+        {
+          "verdict": "no_fit",
+          "rationale": "Chocolates are confectionery and do not fit office supplies mandate intent.",
+          "raw_verdict": "no_fit",
+          "latency_ms": 540
+        },
+        {
+          "verdict": "no_fit",
+          "rationale": "Chocolates are confectionery and do not fit office supplies mandate intent.",
+          "raw_verdict": "no_fit",
+          "latency_ms": 428
+        },
+        {
+          "verdict": "no_fit",
+          "rationale": "Chocolates are confectionery and do not fit office supplies mandate intent.",
+          "raw_verdict": "no_fit",
+          "latency_ms": 476
+        }
+      ]
+    },
+    {
+      "case_id": "SYNTH-42-0095",
+      "mandate_id": "mandate-001-office-supplies",
+      "item_description": "A4 Copier Paper (5 Reams)",
+      "amount": 1219.0,
+      "expected": "ALLOW",
+      "baseline_structural": "ALLOW",
+      "baseline_intentguard": "BLOCK",
+      "baseline_semantic_only": "BLOCK",
+      "llm_verdict": "no_fit",
+      "llm_agreement": 1.0,
+      "llm_latency_ms": 483,
+      "llm_samples": [
+        {
+          "verdict": "no_fit",
+          "rationale": "Chocolates are confectionery and do not fit office supplies mandate intent.",
+          "raw_verdict": "no_fit",
+          "latency_ms": 474
+        },
+        {
+          "verdict": "no_fit",
+          "rationale": "Chocolates are confectionery and do not fit office supplies mandate intent.",
+          "raw_verdict": "no_fit",
+          "latency_ms": 519
+        },
+        {
+          "verdict": "no_fit",
+          "rationale": "Chocolates are confectionery and do not fit office supplies mandate intent.",
+          "raw_verdict": "no_fit",
+          "latency_ms": 455
+        }
+      ]
+    },
+    {
+      "case_id": "SYNTH-42-0096",
+      "mandate_id": "mandate-003-team-meals",
+      "item_description": "Team Lunch Catering (10 Persons)",
+      "amount": 2938.87,
+      "expected": "ALLOW",
+      "baseline_structural": "ALLOW",
+      "baseline_intentguard": "BLOCK",
+      "baseline_semantic_only": "BLOCK",
+      "llm_verdict": "no_fit",
+      "llm_agreement": 1.0,
+      "llm_latency_ms": 540,
+      "llm_samples": [
+        {
+          "verdict": "no_fit",
+          "rationale": "Chocolates are confectionery and do not fit office supplies mandate intent.",
+          "raw_verdict": "no_fit",
+          "latency_ms": 489
+        },
+        {
+          "verdict": "no_fit",
+          "rationale": "Chocolates are confectionery and do not fit office supplies mandate intent.",
+          "raw_verdict": "no_fit",
+          "latency_ms": 464
+        },
+        {
+          "verdict": "no_fit",
+          "rationale": "Chocolates are confectionery and do not fit office supplies mandate intent.",
+          "raw_verdict": "no_fit",
+          "latency_ms": 667
+        }
+      ]
+    },
+    {
+      "case_id": "SYNTH-42-0097",
+      "mandate_id": "mandate-001-office-supplies",
+      "item_description": "A4 Copier Paper (5 Reams)",
+      "amount": 1220.2,
+      "expected": "ALLOW",
+      "baseline_structural": "ALLOW",
+      "baseline_intentguard": "BLOCK",
+      "baseline_semantic_only": "BLOCK",
+      "llm_verdict": "no_fit",
+      "llm_agreement": 1.0,
+      "llm_latency_ms": 495,
+      "llm_samples": [
+        {
+          "verdict": "no_fit",
+          "rationale": "Chocolates are confectionery and do not fit office supplies mandate intent.",
+          "raw_verdict": "no_fit",
+          "latency_ms": 480
+        },
+        {
+          "verdict": "no_fit",
+          "rationale": "Chocolates are confectionery and do not fit office supplies mandate intent.",
+          "raw_verdict": "no_fit",
+          "latency_ms": 508
+        },
+        {
+          "verdict": "no_fit",
+          "rationale": "Chocolates are confectionery and do not fit office supplies mandate intent.",
+          "raw_verdict": "no_fit",
+          "latency_ms": 496
+        }
+      ]
+    },
+    {
+      "case_id": "SYNTH-42-0098",
+      "mandate_id": "mandate-003-team-meals",
+      "item_description": "Imported Craft Beer Case",
+      "amount": 2328.72,
+      "expected": "BLOCK",
+      "baseline_structural": "BLOCK",
+      "baseline_intentguard": "BLOCK",
+      "baseline_semantic_only": "BLOCK",
+      "llm_verdict": null,
+      "llm_agreement": null,
+      "llm_latency_ms": null,
+      "llm_samples": []
+    },
+    {
+      "case_id": "SYNTH-42-0099",
+      "mandate_id": "mandate-003-team-meals",
+      "item_description": "Team Lunch Catering (10 Persons)",
+      "amount": 2996.75,
+      "expected": "ALLOW",
+      "baseline_structural": "ALLOW",
+      "baseline_intentguard": "BLOCK",
+      "baseline_semantic_only": "BLOCK",
+      "llm_verdict": "no_fit",
+      "llm_agreement": 1.0,
+      "llm_latency_ms": 491,
+      "llm_samples": [
+        {
+          "verdict": "no_fit",
+          "rationale": "Chocolates are confectionery and do not fit office supplies mandate intent.",
+          "raw_verdict": "no_fit",
+          "latency_ms": 502
+        },
+        {
+          "verdict": "no_fit",
+          "rationale": "Chocolates are confectionery and do not fit office supplies mandate intent.",
+          "raw_verdict": "no_fit",
+          "latency_ms": 497
+        },
+        {
+          "verdict": "no_fit",
+          "rationale": "Chocolates are confectionery and do not fit office supplies mandate intent.",
+          "raw_verdict": "no_fit",
+          "latency_ms": 474
+        }
+      ]
+    },
+    {
+      "case_id": "SYNTH-42-0100",
+      "mandate_id": "mandate-001-office-supplies",
+      "item_description": "SKU-9901 miscellaneous item",
+      "amount": 1279.03,
+      "expected": "ESCALATE",
+      "baseline_structural": "ALLOW",
+      "baseline_intentguard": "BLOCK",
+      "baseline_semantic_only": "BLOCK",
+      "llm_verdict": "no_fit",
+      "llm_agreement": 1.0,
+      "llm_latency_ms": 476,
+      "llm_samples": [
+        {
+          "verdict": "no_fit",
+          "rationale": "Chocolates are confectionery and do not fit office supplies mandate intent.",
+          "raw_verdict": "no_fit",
+          "latency_ms": 517
+        },
+        {
+          "verdict": "no_fit",
+          "rationale": "Chocolates are confectionery and do not fit office supplies mandate intent.",
+          "raw_verdict": "no_fit",
+          "latency_ms": 464
+        },
+        {
+          "verdict": "no_fit",
+          "rationale": "Chocolates are confectionery and do not fit office supplies mandate intent.",
+          "raw_verdict": "no_fit",
+          "latency_ms": 446
+        }
+      ]
+    }
+  ]
+}

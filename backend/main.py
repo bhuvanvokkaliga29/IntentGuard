@@ -18,10 +18,13 @@ import sys
 import os
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from fastapi import FastAPI, HTTPException, Query
+from fastapi import FastAPI, HTTPException, Query, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse, JSONResponse
 from pydantic import BaseModel, Field
+
+from backend.security.auth import require_api_key
+from backend.security.rate_limiter import rate_limit_guard
 
 from backend.config import get_settings
 from backend.db import (
@@ -428,7 +431,7 @@ async def get_agent_scorecard():
     }
 
 
-@app.post("/agents/simulate")
+@app.post("/agents/simulate", dependencies=[Depends(rate_limit_guard)])
 async def run_live_simulation(req: SimulateRequest):
     """
     Run full 14-stage end-to-end simulation from mandate loading to agent candidate search,
@@ -542,7 +545,7 @@ async def run_live_simulation(req: SimulateRequest):
 
 # ── Mandates Endpoints ───────────────────────────────────────
 
-@app.post("/mandates")
+@app.post("/mandates", dependencies=[Depends(rate_limit_guard), Depends(require_api_key)])
 async def create_mandate_endpoint(req: MandateCreateRequest):
     """Create a new spending mandate."""
     session = await get_session()
@@ -599,7 +602,7 @@ async def get_transaction_endpoint(transaction_id: str):
 
 # ── Decisions & Human Review Endpoints ───────────────────────
 
-@app.post("/decisions/evaluate")
+@app.post("/decisions/evaluate", dependencies=[Depends(rate_limit_guard), Depends(require_api_key)])
 async def evaluate_transaction_endpoint(req: EvaluateRequest):
     """Run the full IntentGuard evaluation pipeline for a transaction."""
     from backend.orchestrator import evaluate_transaction
@@ -675,6 +678,22 @@ async def get_audit_endpoint(decision_id: str):
         if row is None:
             raise HTTPException(status_code=404, detail="Audit log not found")
         return audit_row_to_dict(row)
+
+
+@app.get("/audit/chain/verify")
+async def verify_audit_chain_endpoint():
+    """Verify cryptographic integrity of the tamper-evident audit ledger hash chain."""
+    from backend.db import verify_audit_chain
+    session = await get_session()
+    async with session:
+        is_valid, errors = await verify_audit_chain(session)
+        return {
+            "chain_valid": is_valid,
+            "violations_count": len(errors),
+            "violations": errors,
+            "status": "SECURE_TAMPER_EVIDENT" if is_valid else "INTEGRITY_VIOLATION_DETECTED",
+            "verified_at": datetime.now(timezone.utc).isoformat(),
+        }
 
 
 # ── Evaluation & Matrix Endpoints ────────────────────────────
@@ -818,7 +837,7 @@ async def stream_agent_telemetry():
     )
 
 
-@app.post("/agents/orchestrator/execute")
+@app.post("/agents/orchestrator/execute", dependencies=[Depends(rate_limit_guard), Depends(require_api_key)])
 async def execute_agent_run_endpoint(req: ExecuteOrchestratorRequest):
     """Execute a genuine orchestrated agent run through the finite state machine."""
     orchestrator = get_agent_orchestrator()

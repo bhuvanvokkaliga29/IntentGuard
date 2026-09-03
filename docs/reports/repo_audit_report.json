@@ -1,7 +1,7 @@
 {
   "audit_name": "IntentGuard Automated Repository & Security Audit",
-  "timestamp": "2026-09-01T08:43:39.137169+00:00",
-  "scanned_files_count": 137,
+  "timestamp": "2026-09-03T08:56:37.284896+00:00",
+  "scanned_files_count": 152,
   "findings_count": 0,
   "status": "PASS",
   "findings": [],

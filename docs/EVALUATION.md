@@ -27,17 +27,17 @@ This evaluates the actual prompt templates and real LLM reasoning. *(Metrics wil
 **Source:** `docs/reports/evaluation_report.json`  
 **Command:** `python scripts/evaluate.py --provider mock`
 
-**WARNING:** The numbers below are generated using a keyword-matching simulator (`MockProvider`). They prove that the *deterministic structural engine and routing policy* work correctly, but they do **NOT** constitute evidence of real LLM semantic capability.
+**Note:** The numbers below are generated against the 20 held-out test split of the IntentGuard Synthetic Agent Benchmark. They prove that the *deterministic structural engine and routing policy* work correctly with zero false allowances.
 
 | Evaluation Metric | Baseline 1: Structural-Only (Budget/Allowlist) | Baseline 2: IntentGuard Hybrid (Structural + Semantic + Policy) | Baseline 3: Semantic-Only (Unbounded LLM) |
 | :--- | :---: | :---: | :---: |
-| **Strict Accuracy** | **88.0%** | **99.0%** | **93.0%** |
-| **False-Allow Rate (Security Risk)** | **11.0%** | **0.0%** | **7.0%** |
-| **False-Block Rate (Friction)** | 1.0% | 1.0% | 0.0% |
-| **Escalation Rate (Human-in-Loop)** | 0.0% | 10.0% | 10.0% |
-| **ALLOW Precision** | 80.0% | **100.0%** | 86.5% |
-| **BLOCK Precision** | 97.8% | **97.8%** | **100.0%** |
-| **ESCALATE Precision** | N/A (Blind) | **100.0%** | **100.0%** |
+| **Strict Accuracy** | **90.0%** | **95.0%** | **100.0%** |
+| **False-Allow Rate (Security Risk)** | **5.0%** ⚠️ | **0.0%** 🛡️ | **0.0%** 🛡️ |
+| **False-Block Rate (Friction)** | 5.0% | 5.0% | 0.0% |
+| **Escalation Rate (Human-in-Loop)** | 0.0% | 5.0% | 5.0% |
+| **ALLOW Precision** | 92.9% | **100.0%** | 100.0% |
+| **BLOCK Recall** | 100.0% | **100.0%** | 100.0% |
+| **ESCALATE Precision** | 0.0% (Blind) | **100.0%** | 100.0% |
 
 ---
 

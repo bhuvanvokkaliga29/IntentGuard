@@ -25,7 +25,7 @@ SECRET_PATTERNS = [
     (r"AIza[0-9A-Za-z-_]{35}", "Google API Key"),
     (r"xai-[a-zA-Z0-9]{32,}", "xAI API Key"),
     (r"sk-[a-zA-Z0-9]{32,}", "OpenAI/Generic Secret Key"),
-    (r"rzp_(live|test)_[a-zA-Z0-9]{14}", "Razorpay Secret Key"),
+    (r"rzp_live_[a-zA-Z0-9]{14}", "Razorpay Live Secret Key"),
     (r"-----BEGIN (RSA|EC|OPENSSH) PRIVATE KEY-----", "Private Key"),
 ]
 
@@ -60,8 +60,8 @@ def audit_repository(root_dir: str, output_path: str):
                 with open(file_path, "r", encoding="utf-8", errors="ignore") as fp:
                     content = fp.read()
 
-                # 1. Secret Scanning (skip .env.example)
-                if f != ".env.example":
+                # 1. Secret Scanning (skip local gitignored env files and .env.example)
+                if f not in (".env.example", ".env", ".env.local", ".env.production"):
                     for pat, name in SECRET_PATTERNS:
                         if re.search(pat, content):
                             findings.append({

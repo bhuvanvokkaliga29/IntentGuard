@@ -132,6 +132,21 @@ class GeminiProvider(LLMProvider):
             except json.JSONDecodeError:
                 # Try to extract JSON from the response
                 parsed = self._extract_json(response_text)
+
+            if isinstance(parsed, dict):
+                if "normalized_category" not in parsed:
+                    parsed["normalized_category"] = (
+                        parsed.get("category")
+                        or parsed.get("merchant_category")
+                        or "general"
+                    )
+                if "item_type" not in parsed:
+                    parsed["item_type"] = (
+                        parsed.get("item_description")
+                        or parsed.get("type")
+                        or "unspecified"
+                    )
+
             return parsed, usage
         except Exception as e:
             if "429" in str(e) or "quota" in str(e).lower() or "ResourceExhausted" in str(e):
@@ -156,6 +171,42 @@ class GeminiProvider(LLMProvider):
                 parsed = json.loads(response_text)
             except json.JSONDecodeError:
                 parsed = self._extract_json(response_text)
+
+            if isinstance(parsed, dict):
+                # Normalize verdict
+                if "verdict" not in parsed:
+                    if "is_reasonable" in parsed:
+                        parsed["verdict"] = "fit" if parsed["is_reasonable"] else "no_fit"
+                    elif "fits" in parsed:
+                        parsed["verdict"] = "fit" if parsed["fits"] else "no_fit"
+                    elif "match" in parsed:
+                        parsed["verdict"] = "fit" if parsed["match"] else "no_fit"
+                    else:
+                        parsed["verdict"] = "ambiguous"
+
+                # Normalize string representations
+                v_str = str(parsed["verdict"]).lower().strip().replace(" ", "_")
+                if v_str in ("fit", "direct_fit", "allowed", "true", "yes"):
+                    parsed["verdict"] = "fit"
+                elif v_str in ("no_fit", "nofit", "drift_detected", "blocked", "false", "no"):
+                    parsed["verdict"] = "no_fit"
+                else:
+                    parsed["verdict"] = "ambiguous"
+
+                # Normalize rationale
+                if "rationale" not in parsed:
+                    raw_rat = (
+                        parsed.get("reasoning")
+                        or parsed.get("explanation")
+                        or parsed.get("verification_details")
+                    )
+                    if isinstance(raw_rat, dict):
+                        parsed["rationale"] = "; ".join(f"{k}: {v}" for k, v in raw_rat.items())
+                    elif raw_rat:
+                        parsed["rationale"] = str(raw_rat)
+                    else:
+                        parsed["rationale"] = "Semantic alignment evaluated by Gemini model."
+
             return parsed, usage
         except Exception as e:
             if "429" in str(e) or "quota" in str(e).lower() or "ResourceExhausted" in str(e):

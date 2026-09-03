@@ -29,6 +29,7 @@ class Settings(BaseSettings):
     # ── Razorpay ──────────────────────────────────────────────
     razorpay_key_id: Optional[str] = Field(default=None, description="Razorpay API Key ID")
     razorpay_key_secret: Optional[str] = Field(default=None, description="Razorpay API Key Secret")
+    razorpay_enabled: bool = Field(default=True, description="Enable Razorpay financial execution adapter")
 
     # ── Database ──────────────────────────────────────────────
     database_url: str = Field(
@@ -55,6 +56,11 @@ class Settings(BaseSettings):
     api_host: str = Field(default="0.0.0.0")
     api_port: int = Field(default=8000)
     submission_track: str = Field(default="Track 5 — Open Track", description="Hackathon submission track")
+
+    # ── Security & Authentication ──────────────────────────────
+    api_key: Optional[str] = Field(default=None, description="API Key for protected endpoints (None = dev open mode)")
+    rate_limit_enabled: bool = Field(default=True, description="Enable request rate limiting")
+    rate_limit_per_minute: int = Field(default=120, description="Max requests per minute per IP")
 
     # ── Confidence Thresholds ─────────────────────────────────
     confidence_threshold_high: float = Field(

@@ -20,10 +20,12 @@ Do NOT reorder safety-critical operations.
 """
 
 import asyncio
+import hashlib
+import json
 import logging
 import time
 import uuid
-from typing import Dict, Optional
+from typing import Dict, Optional, Any, List
 
 from backend.config import get_settings
 from backend.llm.provider import LLMProvider
@@ -44,6 +46,32 @@ from backend.agent.tools import (
 
 logger = logging.getLogger("intentguard.agent")
 
+def compute_semantic_cache_key(mandate: Dict[str, Any], transaction: Dict[str, Any], policy_version: str = "v1") -> str:
+    """
+    Generate a cryptographic, context-complete cache key.
+    Includes: mandate_id, intent_text hash, allowed_categories, exclusions,
+    allowed_merchants, item_description, merchant_name, and policy_version.
+    A cached ALLOW will NEVER survive changes to mandate policies or merchant constraints.
+    """
+    import hashlib
+    categories = sorted(mandate.get("allowed_categories") or [])
+    exclusions = sorted(mandate.get("exclusions") or [])
+    merchants = sorted(mandate.get("allowed_merchants") or [])
+
+    ctx = {
+        "mandate_id": str(mandate.get("id", "")),
+        "intent_text": str(mandate.get("intent_text", "")).strip().lower(),
+        "categories": categories,
+        "exclusions": exclusions,
+        "merchants": merchants,
+        "item_description": str(transaction.get("item_description", "")).strip().lower(),
+        "merchant_name": str(transaction.get("merchant_name", "")).strip().lower(),
+        "policy_version": policy_version,
+    }
+    canonical = json.dumps(ctx, sort_keys=True)
+    return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
+
+
 # ── Semantic Cache & Enterprise Guardrails ──────────────────
 def _init_canonical_cache() -> Dict[str, Dict]:
     try:
@@ -54,7 +82,8 @@ def _init_canonical_cache() -> Dict[str, Dict]:
             desc = sc.get("transaction", {}).get("item_description", "").strip().lower()
             if not mandate_id or not desc:
                 continue
-            key = f"{mandate_id}::{desc}"
+            fake_mandate = {"id": mandate_id, "intent_text": "", "allowed_categories": [], "exclusions": [], "allowed_merchants": []}
+            key = compute_semantic_cache_key(fake_mandate, sc.get("transaction", {}))
             expected = sc.get("with_intentguard_expected")
             if expected == "ALLOW":
                 verdict = "fit"
@@ -94,6 +123,13 @@ _INJECTION_PATTERNS = [
     r"<script",
     r"you\s+are\s+now\s+in\s+developer\s+mode",
     r"jailbreak",
+    r"system\s*administrator\s*says\s*allow",
+    r"increase\s+(the\s+)?budget",
+    r"add\s+merchant\s+to\s+(whitelist|allowlist)",
+    r"treat\s+this\s+as\s+pre-?approved",
+    r"don'?t\s+tell\s+(the\s+)?auditor",
+    r"skip\s+semantic\s+verification",
+    r"return\s+allow\s+regardless",
 ]
 
 def _check_prompt_injection(text: str) -> Optional[str]:
@@ -101,11 +137,30 @@ def _check_prompt_injection(text: str) -> Optional[str]:
     if not text:
         return None
     import re
-    lower = text.lower()
+    lower = str(text).lower()
     for pattern in _INJECTION_PATTERNS:
         match = re.search(pattern, lower, re.IGNORECASE)
         if match:
             return match.group(0)
+    return None
+
+def check_all_inputs_for_injection(*inputs) -> Optional[str]:
+    """Scan all untrusted input surfaces for adversarial prompt injections."""
+    for item in inputs:
+        if isinstance(item, dict):
+            for v in item.values():
+                trig = _check_prompt_injection(str(v))
+                if trig:
+                    return trig
+        elif isinstance(item, (list, tuple)):
+            for v in item:
+                trig = _check_prompt_injection(str(v))
+                if trig:
+                    return trig
+        elif item:
+            trig = _check_prompt_injection(str(item))
+            if trig:
+                return trig
     return None
 
 def _enrich_messy_data(description: str, merchant: str, category: str) -> str:
@@ -266,8 +321,14 @@ async def _run_evaluation_pipeline_internal(
                 pipeline_start=pipeline_start,
             )
 
-        # ── Step 3.5: Security Guardrail (Prompt Injection Defense) ──
-        injection_trigger = _check_prompt_injection(transaction.get("item_description", ""))
+        # ── Step 3.5: Security Guardrail (Multi-field Prompt Injection Defense) ──
+        injection_trigger = check_all_inputs_for_injection(
+            transaction.get("item_description", ""),
+            transaction.get("merchant_name", ""),
+            transaction.get("notes", ""),
+            transaction.get("metadata", {}),
+            mandate.get("intent_text", ""),
+        )
         if injection_trigger:
             logger.warning(f"[SECURITY] Adversarial prompt injection detected: '{injection_trigger}' → BLOCK")
             sec_structural = {
@@ -285,7 +346,7 @@ async def _run_evaluation_pipeline_internal(
                 evidence_is_sufficient=True,
             )
             tool_call_records.append(tool_record)
-            explanation = f"Transaction blocked due to security violation: Prompt injection attempt detected in item description."
+            explanation = f"Transaction blocked due to security violation: Prompt injection attempt detected ({injection_trigger})."
             return await _finalize_decision(
                 session=session,
                 request_id=request_id,
@@ -318,11 +379,13 @@ async def _run_evaluation_pipeline_internal(
         # Check if description is too vague for semantic judgment
         is_vague = product_context.get("description_quality") == "insufficient"
 
-        # ── Semantic Cache Lookup ─────────────────────────────
-        cache_key = f"{mandate['id']}::{transaction.get('item_description', '').strip().lower()}"
+        # ── Semantic Cache Lookup (Context-Complete Key) ───────
+        cache_key = compute_semantic_cache_key(mandate, transaction, settings.semantic_prompt_version)
         cached_entry = _SEMANTIC_CACHE.get(cache_key)
+        cache_hit = False
 
         if cached_entry:
+            cache_hit = True
             logger.info(f"[CACHE HIT] Reusing cached semantic analysis for '{transaction.get('item_description')}' (bypassing LLM)")
             extracted_facts = cached_entry["extracted_facts"]
             semantic_judgment_result = cached_entry["semantic_judgment_result"]
@@ -450,6 +513,7 @@ async def _run_evaluation_pipeline_internal(
             provider=provider,
             tool_call_records=tool_call_records,
             pipeline_start=pipeline_start,
+            cache_hit=cache_hit,
         )
 
     except Exception as e:
@@ -541,6 +605,7 @@ async def _finalize_decision(
     provider: LLMProvider,
     tool_call_records: list,
     pipeline_start: float,
+    cache_hit: bool = False,
 ) -> Dict:
     """Record the decision and audit trail, return the full response."""
     settings = get_settings()
@@ -619,6 +684,7 @@ async def _finalize_decision(
         "explanation": explanation,
         "latency_ms": total_latency_ms,
         "audit_id": audit_id,
+        "cache_hit": cache_hit,
     }
 
 

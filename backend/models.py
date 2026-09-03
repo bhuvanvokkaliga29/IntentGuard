@@ -56,7 +56,7 @@ class GroundTruthTier(str, Enum):
 
 class MandateBase(BaseModel):
     """Base mandate fields."""
-    intent_text: str = Field(..., description="Natural language spending intent")
+    intent_text: str = Field(..., max_length=2000, description="Natural language spending intent")
     max_amount_per_txn: float = Field(..., gt=0, description="Maximum amount per transaction")
     budget_cap: Optional[float] = Field(None, gt=0, description="Cumulative budget cap")
     allowed_categories: List[str] = Field(default_factory=list, description="Allowed merchant/item categories")
@@ -84,9 +84,9 @@ class TransactionBase(BaseModel):
     """Base transaction fields."""
     mandate_id: str = Field(..., description="Reference to the mandate this transaction is under")
     amount: float = Field(..., gt=0)
-    merchant_name: str = Field(...)
-    merchant_category: str = Field(...)
-    item_description: str = Field(...)
+    merchant_name: str = Field(..., max_length=250)
+    merchant_category: str = Field(..., max_length=100)
+    item_description: str = Field(..., max_length=1000)
     timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 
@@ -222,6 +222,8 @@ class AuditLog(BaseModel):
     final_decision: Optional[str] = None
     explanation: Optional[str] = None
     latency_ms: int = 0
+    previous_record_hash: Optional[str] = None
+    current_record_hash: Optional[str] = None
     timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 

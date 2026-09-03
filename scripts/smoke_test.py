@@ -107,15 +107,23 @@ async def run_smoke_test():
     print("  [OK] Self-healing successfully recovered from injected tool timeout.")
 
     # 8. Audit Ledger Verification
-    print("\n[8/8] Verifying Immutable Audit Ledger Records...")
+    print("\n[8/9] Verifying Immutable Audit Ledger Records...")
     async with await get_session() as session:
         decisions = await list_decisions(session)
         audits = await list_audit_logs(session)
         runs = await list_agent_runs(session)
     print(f"  [OK] Verified {len(decisions)} Decisions, {len(audits)} Audit Logs, and {len(runs)} Agent Runs persisted.")
 
+    # 9. Cryptographic Audit Hash Chain Verification
+    print("\n[9/9] Verifying Cryptographic Audit Hash Chain Integrity...")
+    from backend.db import verify_audit_chain
+    async with await get_session() as session:
+        is_chain_valid, chain_errors = await verify_audit_chain(session)
+    assert is_chain_valid is True, f"Audit hash chain verification failed: {chain_errors}"
+    print(f"  [OK] Cryptographic SHA-256 Audit Hash Chain is unbroken and tamper-evident!")
+
     print("\n" + "=" * 60)
-    print("ALL 8 INTEGRATION CHECKS PASSED! REPOSITORY IS HEALTHY.")
+    print("ALL 9 INTEGRATION CHECKS PASSED! REPOSITORY IS HEALTHY.")
     print("=" * 60)
 
 
