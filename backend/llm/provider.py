@@ -105,19 +105,26 @@ class MockProvider(LLMProvider):
         system_instruction: str = "",
     ) -> Tuple[Dict, Dict]:
         p_lower = prompt.lower()
-        if "chocolate" in p_lower or "sweet" in p_lower:
+        # Isolate transaction data section to avoid matching prompt template instructions
+        data_text = p_lower
+        if "transaction data:" in p_lower:
+            data_text = p_lower.split("transaction data:", 1)[1]
+            if "mandate context" in data_text:
+                data_text = data_text.split("mandate context", 1)[0]
+
+        if "chocolate" in data_text or "sweet" in data_text:
             category = "food_confectionery"
             item_type = "confectionery"
-        elif "flight" in p_lower or "airline" in p_lower or "dubai" in p_lower:
+        elif "flight" in data_text or "airline" in data_text or "dubai" in data_text:
             category = "travel"
             item_type = "airline_ticket"
-        elif "spa" in p_lower or "skincare" in p_lower or "cosmetic" in p_lower:
+        elif "spa" in data_text or "skincare" in data_text or "cosmetic" in data_text:
             category = "cosmetics"
             item_type = "luxury_spa"
-        elif "paper" in p_lower or "pen" in p_lower or "stationery" in p_lower or "sticky notes" in p_lower or "desk" in p_lower:
+        elif "paper" in data_text or "pen" in data_text or "stationery" in data_text or "sticky notes" in data_text or "desk" in data_text or "printer" in data_text:
             category = "office_supplies"
             item_type = "stationery"
-        elif "air freshener" in p_lower or "diffuser" in p_lower:
+        elif "air freshener" in data_text or "diffuser" in data_text:
             category = "office_supplies"
             item_type = "ambient_decor"
         else:
@@ -142,22 +149,37 @@ class MockProvider(LLMProvider):
         system_instruction: str = "",
     ) -> Tuple[Dict, Dict]:
         p_lower = prompt.lower()
-        if ("chocolate" in p_lower or "sweet" in p_lower) and ("office supplies" in p_lower or "stationery" in p_lower):
+
+        # Isolate item description and original transaction to avoid matching template instructions (e.g. Rule 7 chocolates)
+        item_text = p_lower
+        if "original transaction:" in p_lower:
+            item_text = p_lower.split("original transaction:", 1)[1]
+        elif "item:" in p_lower:
+            item_text = p_lower.split("item:", 1)[1]
+
+        # Isolate mandate intent
+        mandate_part = p_lower
+        if "user's spending mandate:" in p_lower:
+            mandate_part = p_lower.split("user's spending mandate:", 1)[1]
+            if "extracted transaction facts:" in mandate_part:
+                mandate_part = mandate_part.split("extracted transaction facts:", 1)[0]
+
+        if ("chocolate" in item_text or "sweet" in item_text or "confectionery" in item_text) and ("office supplies" in mandate_part or "stationery" in mandate_part):
             verdict = "no_fit"
             reasoning = "Chocolates are confectionery and do not fit office supplies mandate intent."
-        elif "dubai" in p_lower and ("domestic" in p_lower or "bangalore" in p_lower):
+        elif "dubai" in item_text and ("domestic" in mandate_part or "bangalore" in mandate_part):
             verdict = "no_fit"
             reasoning = "International travel violates domestic flight mandate intent."
-        elif ("spa" in p_lower or "skincare" in p_lower) and ("groceries" in p_lower or "supermarket" in p_lower):
+        elif ("spa" in item_text or "skincare" in item_text or "cosmetic" in item_text) and ("groceries" in mandate_part or "supermarket" in mandate_part):
             verdict = "no_fit"
             reasoning = "Luxury spa package is cosmetics and violates household groceries mandate intent."
-        elif "paper" in p_lower or "pen" in p_lower or "sticky notes" in p_lower or "stationery" in p_lower or "desk" in p_lower:
+        elif "paper" in item_text or "pen" in item_text or "sticky notes" in item_text or "stationery" in item_text or "desk" in item_text or "printer" in item_text:
             verdict = "fit"
             reasoning = "Stationery items directly fit the office supplies mandate."
-        elif "air freshener" in p_lower or "diffuser" in p_lower:
+        elif "air freshener" in item_text or "diffuser" in item_text:
             verdict = "ambiguous"
             reasoning = "Item intent cannot be deterministically verified from description under vague mandate."
-        elif "miscellaneous" in p_lower:
+        elif "miscellaneous" in item_text:
             verdict = "ambiguous"
             reasoning = "Description 'miscellaneous item' provides insufficient evidence to confirm intent compliance."
         else:
@@ -179,17 +201,24 @@ class MockProvider(LLMProvider):
         system_instruction: str = "",
     ) -> Tuple[str, Dict]:
         p_lower = prompt.lower()
-        if "chocolate" in p_lower:
+        # Isolate item description
+        item_text = p_lower
+        if "item:" in p_lower:
+            item_text = p_lower.split("item:", 1)[1]
+            if "verdict:" in item_text:
+                item_text = item_text.split("verdict:", 1)[0]
+
+        if "chocolate" in item_text:
             explanation = "Item is confectionery/food, violating the stated office supplies intent. Blocked by semantic policy."
-        elif "dubai" in p_lower:
+        elif "dubai" in item_text:
             explanation = "Flight destination (Dubai) is international, violating the domestic mandate restriction. Blocked."
-        elif "spa" in p_lower or "skincare" in p_lower:
+        elif "spa" in item_text or "skincare" in item_text:
             explanation = "Luxury cosmetic spa bundle violates household groceries mandate. Blocked by semantic verification."
-        elif "paper" in p_lower or "pen" in p_lower:
+        elif "paper" in item_text or "pen" in item_text or "sticky notes" in item_text or "printer" in item_text:
             explanation = "Standard office supplies from approved merchant well within limit. Approved by semantic verification."
-        elif "diffuser" in p_lower or "air freshener" in p_lower:
+        elif "diffuser" in item_text or "air freshener" in item_text:
             explanation = "Mandate purpose is too underspecified to establish definitive semantic entailment. Escalated for user confirmation."
-        elif "miscellaneous" in p_lower:
+        elif "miscellaneous" in item_text:
             explanation = "Description 'miscellaneous item' provides insufficient evidence to confirm intent compliance. Safely escalated."
         else:
             explanation = "Decision rendered based on structural constraints and semantic intent assessment."

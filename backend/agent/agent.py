@@ -82,8 +82,14 @@ def _init_canonical_cache() -> Dict[str, Dict]:
             desc = sc.get("transaction", {}).get("item_description", "").strip().lower()
             if not mandate_id or not desc:
                 continue
-            fake_mandate = {"id": mandate_id, "intent_text": "", "allowed_categories": [], "exclusions": [], "allowed_merchants": []}
-            key = compute_semantic_cache_key(fake_mandate, sc.get("transaction", {}))
+            real_mandate = {
+                "id": mandate_id,
+                "intent_text": sc.get("mandate_text", ""),
+                "allowed_categories": sc.get("allowed_categories", ["office_supplies", "travel", "groceries", "general", "stationery"]),
+                "exclusions": sc.get("exclusions", []),
+                "allowed_merchants": sc.get("allowed_merchants", []),
+            }
+            key = compute_semantic_cache_key(real_mandate, sc.get("transaction", {}), "v1")
             expected = sc.get("with_intentguard_expected")
             if expected == "ALLOW":
                 verdict = "fit"

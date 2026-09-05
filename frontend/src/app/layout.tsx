@@ -27,7 +27,7 @@ export default function RootLayout({
         <Script src="https://checkout.razorpay.com/v1/checkout.js" strategy="beforeInteractive" />
         {/* Navigation - Dark Console Top Bar */}
         <header className="sticky top-0 z-50 w-full bg-void/90 backdrop-blur-md border-b border-graphite/60">
-          <div className="max-w-[1400px] mx-auto px-6 h-16 flex items-center justify-between">
+          <div className="w-full max-w-[1760px] mx-auto px-6 lg:px-8 h-16 flex items-center justify-between">
             <div className="flex items-center gap-6">
               <Link href="/" className="flex items-center gap-2.5 group">
                 <div className="w-5 h-5 bg-acid-lime rounded-sm flex items-center justify-center text-void font-mono font-bold text-[11px] shadow-[0_0_10px_rgba(228,242,34,0.3)]">
@@ -83,13 +83,13 @@ export default function RootLayout({
         </header>
 
         {/* Main Content */}
-        <main className="flex-1 w-full max-w-[1400px] mx-auto px-6">
+        <main className="flex-1 w-full max-w-[1760px] mx-auto px-6 lg:px-8">
           {children}
         </main>
 
         {/* Footer */}
         <footer className="w-full border-t border-graphite mt-24 bg-carbon/40">
-          <div className="max-w-[1400px] mx-auto px-6 py-8 flex flex-col md:flex-row justify-between items-center text-[12px] text-ash font-mono">
+          <div className="w-full max-w-[1760px] mx-auto px-6 lg:px-8 py-8 flex flex-col md:flex-row justify-between items-center text-[12px] text-ash font-mono">
             <div className="flex items-center gap-4 mb-4 md:mb-0">
               <span>Razorpay AI Buildathon 2026</span>
               <span>·</span>
