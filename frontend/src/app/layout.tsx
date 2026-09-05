@@ -1,20 +1,7 @@
 import type { Metadata } from "next";
-import { Inter, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import Link from "next/link";
 import Script from "next/script";
-
-const inter = Inter({
-  subsets: ["latin"],
-  variable: "--font-inter",
-  display: "swap",
-});
-
-const jetbrainsMono = JetBrains_Mono({
-  subsets: ["latin"],
-  variable: "--font-mono",
-  display: "swap",
-});
 
 export const metadata: Metadata = {
   title: "IntentGuard — Semantic Spending Guard for Autonomous Agents",
@@ -29,8 +16,14 @@ export default function RootLayout({
   return (
     <html lang="en">
       <head>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link
+          href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap"
+          rel="stylesheet"
+        />
       </head>
-      <body className={`${inter.variable} ${jetbrainsMono.variable} antialiased min-h-screen flex flex-col bg-void text-mist selection:bg-acid-lime/30 selection:text-void`}>
+      <body className="antialiased min-h-screen flex flex-col bg-void text-mist selection:bg-acid-lime/30 selection:text-void font-sans">
         <Script src="https://checkout.razorpay.com/v1/checkout.js" strategy="beforeInteractive" />
         {/* Navigation - Dark Console Top Bar */}
         <header className="sticky top-0 z-50 w-full bg-void/90 backdrop-blur-md border-b border-graphite/60">
