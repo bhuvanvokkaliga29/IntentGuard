@@ -14,7 +14,7 @@
 [![Submission Deliverables](https://img.shields.io/badge/Google%20Drive-Pitch%20Video%20%7C%20PPT%20%7C%20Report%20%7C%20Diagram-blue?logo=googledrive&logoColor=white)](https://drive.google.com/drive/folders/1AIyxBjPHNvt34e-GSlBprti9K33sl2ij?usp=sharing)
 [![CI/CD Pipeline](https://github.com/bhuvanvokkaliga29/IntentGuard/actions/workflows/ci.yml/badge.svg)](https://github.com/bhuvanvokkaliga29/IntentGuard/actions)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![Tests: 155 Passed](https://img.shields.io/badge/Tests-155%20Passed-brightgreen.svg)](docs/REPOSITORY_HEALTH.md)
+[![Tests: 163 Passed](https://img.shields.io/badge/Tests-163%20Passed-brightgreen.svg)](docs/REPOSITORY_HEALTH.md)
 [![Python: 3.10+](https://img.shields.io/badge/Python-3.10%2B-blue.svg)](https://www.python.org/)
 [![FastAPI: Backend](https://img.shields.io/badge/FastAPI-0.110.0-009688.svg)](https://fastapi.tiangolo.com/)
 [![Audit Chain: SHA-256](https://img.shields.io/badge/Audit%20Ledger-Cryptographic%20Hash%20Chain-blueviolet.svg)](backend/db.py)

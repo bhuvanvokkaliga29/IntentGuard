@@ -71,7 +71,7 @@ jobs:
           alembic current
           alembic upgrade head
 
-      - name: Run 155 Automated Pytest Unit Tests
+      - name: Run 163 Automated Pytest Unit Tests
         env:
           LLM_PROVIDER: mock
         run: |
