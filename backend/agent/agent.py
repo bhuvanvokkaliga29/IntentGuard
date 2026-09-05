@@ -29,6 +29,12 @@ from typing import Dict, Optional, Any, List
 
 from backend.config import get_settings
 from backend.llm.provider import LLMProvider
+from backend.security.prompt_defense import (
+    evaluate_prompt_defense,
+    scan_for_prompt_injection,
+    normalize_untrusted_text,
+    encapsulate_untrusted_input,
+)
 from backend.agent.tools import (
     tool_get_mandate,
     tool_get_transaction,
@@ -140,34 +146,12 @@ _INJECTION_PATTERNS = [
 
 def _check_prompt_injection(text: str) -> Optional[str]:
     """Scan input text for adversarial prompt injection patterns."""
-    if not text:
-        return None
-    import re
-    lower = str(text).lower()
-    for pattern in _INJECTION_PATTERNS:
-        match = re.search(pattern, lower, re.IGNORECASE)
-        if match:
-            return match.group(0)
-    return None
+    return scan_for_prompt_injection(text)
 
 def check_all_inputs_for_injection(*inputs) -> Optional[str]:
     """Scan all untrusted input surfaces for adversarial prompt injections."""
-    for item in inputs:
-        if isinstance(item, dict):
-            for v in item.values():
-                trig = _check_prompt_injection(str(v))
-                if trig:
-                    return trig
-        elif isinstance(item, (list, tuple)):
-            for v in item:
-                trig = _check_prompt_injection(str(v))
-                if trig:
-                    return trig
-        elif item:
-            trig = _check_prompt_injection(str(item))
-            if trig:
-                return trig
-    return None
+    is_safe, violation = evaluate_prompt_defense(*inputs)
+    return violation if not is_safe else None
 
 def _enrich_messy_data(description: str, merchant: str, category: str) -> str:
     """Enrich messy or truncated POS / Level-1 bank descriptions via receipt/L3 lookup simulation."""
@@ -673,6 +657,12 @@ async def _finalize_decision(
         f"Decision: {decision_result['final_decision']}"
     )
 
+    from backend.orchestrator.pipeline import stage_guard_execution_boundary
+    execution_result = stage_guard_execution_boundary(
+        decision_result["final_decision"],
+        transaction,
+    )
+
     # Build response
     return {
         "decision_id": decision_id,
@@ -691,6 +681,7 @@ async def _finalize_decision(
         "latency_ms": total_latency_ms,
         "audit_id": audit_id,
         "cache_hit": cache_hit,
+        "execution_result": execution_result,
     }
 
 

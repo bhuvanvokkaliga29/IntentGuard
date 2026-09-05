@@ -28,6 +28,9 @@ def check_amount_limit(
     return ConstraintCheck(
         constraint_name="max_amount_per_txn",
         passed=passed,
+        status="PASS" if passed else "FAIL",
+        observed=f"₹{txn_amount:,.2f}",
+        expected=f"<= ₹{max_amount_per_txn:,.2f}",
         detail=(
             f"Transaction amount ₹{txn_amount:,.2f} is {'within' if passed else 'above'} "
             f"the ₹{max_amount_per_txn:,.2f} per-transaction limit."
@@ -47,6 +50,9 @@ def check_budget_cap(
         return ConstraintCheck(
             constraint_name="budget_cap",
             passed=True,
+            status="NOT_APPLICABLE",
+            observed=f"Cumulative spent: ₹{cumulative_spent:,.2f}",
+            expected="No budget cap configured",
             detail="No budget cap defined for this mandate.",
         )
 
@@ -56,6 +62,9 @@ def check_budget_cap(
     return ConstraintCheck(
         constraint_name="budget_cap",
         passed=passed,
+        status="PASS" if passed else "FAIL",
+        observed=f"₹{new_total:,.2f} projected total",
+        expected=f"<= ₹{budget_cap:,.2f}",
         detail=(
             f"After this transaction, cumulative spend would be ₹{new_total:,.2f} "
             f"against a ₹{budget_cap:,.2f} budget cap. "
@@ -75,6 +84,9 @@ def check_merchant_allowed(
         return ConstraintCheck(
             constraint_name="allowed_merchants",
             passed=True,
+            status="NOT_APPLICABLE",
+            observed=merchant_name,
+            expected="Any merchant allowed",
             detail="No merchant restrictions defined for this mandate.",
         )
 
@@ -86,6 +98,9 @@ def check_merchant_allowed(
     return ConstraintCheck(
         constraint_name="allowed_merchants",
         passed=passed,
+        status="PASS" if passed else "FAIL",
+        observed=merchant_name,
+        expected=f"Allowed list: {allowed_merchants}",
         detail=(
             f"Merchant '{merchant_name}' is {'in' if passed else 'NOT in'} "
             f"the allowed merchant list: {allowed_merchants}."
@@ -104,6 +119,9 @@ def check_category_allowed(
         return ConstraintCheck(
             constraint_name="allowed_categories",
             passed=True,
+            status="NOT_APPLICABLE",
+            observed=merchant_category,
+            expected="Any category allowed",
             detail="No category restrictions defined for this mandate.",
         )
 
@@ -115,6 +133,9 @@ def check_category_allowed(
     return ConstraintCheck(
         constraint_name="allowed_categories",
         passed=passed,
+        status="PASS" if passed else "FAIL",
+        observed=merchant_category,
+        expected=f"Allowed categories: {allowed_categories}",
         detail=(
             f"Category '{merchant_category}' is {'in' if passed else 'NOT in'} "
             f"the allowed categories: {allowed_categories}."
@@ -140,6 +161,9 @@ def check_location_constraint(
         return ConstraintCheck(
             constraint_name="location_constraint",
             passed=True,
+            status="NOT_APPLICABLE",
+            observed=transaction_location_hint or "None specified",
+            expected="No location constraint",
             detail="No location constraint defined for this mandate.",
         )
 
@@ -169,6 +193,9 @@ def check_location_constraint(
             return ConstraintCheck(
                 constraint_name="location_constraint",
                 passed=False,
+                status="FAIL",
+                observed="international indicators detected",
+                expected="domestic",
                 detail=(
                     f"Mandate requires domestic transactions only, but the transaction "
                     f"description contains international indicators. "
@@ -180,6 +207,9 @@ def check_location_constraint(
         return ConstraintCheck(
             constraint_name="location_constraint",
             passed=True,
+            status="PASS",
+            observed="domestic or neutral indicators",
+            expected="domestic",
             detail="Transaction does not contain international indicators; domestic constraint satisfied.",
         )
 
@@ -191,6 +221,9 @@ def check_location_constraint(
             return ConstraintCheck(
                 constraint_name="location_constraint",
                 passed=False,
+                status="FAIL",
+                observed="domestic indicators detected",
+                expected="international",
                 detail="Mandate requires international transactions, but the transaction appears domestic.",
                 value_checked="domestic (detected)",
                 limit="international",
@@ -198,12 +231,18 @@ def check_location_constraint(
         return ConstraintCheck(
             constraint_name="location_constraint",
             passed=True,
+            status="PASS",
+            observed="international indicators consistent",
+            expected="international",
             detail="Transaction appears consistent with international constraint.",
         )
 
     return ConstraintCheck(
         constraint_name="location_constraint",
         passed=True,
+        status="PASS",
+        observed=text_to_check[:50],
+        expected=location_constraint,
         detail=f"Location constraint '{location_constraint}' — no violation detected.",
     )
 
@@ -223,6 +262,9 @@ def check_exclusions(
         return ConstraintCheck(
             constraint_name="exclusions",
             passed=True,
+            status="NOT_APPLICABLE",
+            observed="No excluded keywords present",
+            expected="No exclusions configured",
             detail="No exclusions defined for this mandate.",
         )
 
@@ -254,6 +296,9 @@ def check_exclusions(
     return ConstraintCheck(
         constraint_name="exclusions",
         passed=passed,
+        status="PASS" if passed else "FAIL",
+        observed=f"Matched: {matched_exclusions}" if not passed else "No exclusions matched",
+        expected=f"None of: {exclusions}",
         detail=(
             f"No excluded items/categories detected in the transaction."
             if passed

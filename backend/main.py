@@ -18,11 +18,12 @@ import sys
 import os
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from fastapi import FastAPI, HTTPException, Query, Depends
+from fastapi import FastAPI, HTTPException, Query, Depends, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse, JSONResponse
 from pydantic import BaseModel, Field
 
+from backend.models import TransactionProposalCreate
 from backend.security.auth import require_api_key
 from backend.security.rate_limiter import rate_limit_guard
 
@@ -602,10 +603,69 @@ async def get_transaction_endpoint(transaction_id: str):
 
 # ── Decisions & Human Review Endpoints ───────────────────────
 
+@app.post("/proposals/evaluate", dependencies=[Depends(rate_limit_guard), Depends(require_api_key)])
+async def evaluate_proposal_endpoint(
+    req: TransactionProposalCreate,
+    request: Request,
+):
+    """
+    Intake and evaluate an autonomous agent transaction proposal.
+    Enforces strict schema validation, idempotency, prompt-injection defense,
+    deterministic policy controls, and execution boundary gating.
+    """
+    from backend.orchestrator.pipeline import stage_intake_proposal
+    from backend.orchestrator import evaluate_transaction
+    from backend.db import create_transaction
+
+    header_idempotency_key = request.headers.get("X-Idempotency-Key")
+    proposal_dict = req.model_dump()
+    if header_idempotency_key and not proposal_dict.get("idempotency_key"):
+        proposal_dict["idempotency_key"] = header_idempotency_key
+
+    # Stage 1: Intake & validate
+    validated_proposal = stage_intake_proposal(proposal_dict)
+
+    session = await get_session()
+    async with session:
+        txn_row = await create_transaction(session, {
+            "id": validated_proposal["id"],
+            "mandate_id": validated_proposal["mandate_id"],
+            "amount": validated_proposal["amount"],
+            "merchant_name": validated_proposal["merchant_name"],
+            "merchant_category": validated_proposal["merchant_category"],
+            "item_description": validated_proposal["item_description"],
+        })
+
+        result = await evaluate_transaction(
+            session=session,
+            transaction_id=txn_row.id,
+            mandate_id=validated_proposal["mandate_id"],
+        )
+
+        if isinstance(result, dict) and result.get("error") and result.get("decision_id") is None:
+            raise HTTPException(status_code=500, detail=result["error"])
+
+        if result.get("final_decision") == "ALLOW":
+            from backend.execution.razorpay_gateway import get_razorpay_gateway
+            gateway = get_razorpay_gateway()
+            rzp_res = gateway.create_order(
+                amount=validated_proposal["amount"],
+                receipt=f"receipt_{txn_row.id[:8]}",
+                idempotency_key=validated_proposal.get("idempotency_key"),
+            )
+            if rzp_res.get("success"):
+                result["razorpay_order_id"] = rzp_res.get("order_id")
+                result["idempotent_replay"] = rzp_res.get("idempotent_replay", False)
+
+        return result
+
+
 @app.post("/decisions/evaluate", dependencies=[Depends(rate_limit_guard), Depends(require_api_key)])
-async def evaluate_transaction_endpoint(req: EvaluateRequest):
+async def evaluate_transaction_endpoint(req: EvaluateRequest, request: Request):
     """Run the full IntentGuard evaluation pipeline for a transaction."""
     from backend.orchestrator import evaluate_transaction
+
+    header_idempotency_key = request.headers.get("X-Idempotency-Key")
 
     session = await get_session()
     async with session:
@@ -628,10 +688,12 @@ async def evaluate_transaction_endpoint(req: EvaluateRequest):
             gateway = get_razorpay_gateway()
             rzp_res = gateway.create_order(
                 amount=txn_amount,
-                receipt=f"receipt_{req.transaction_id[:8]}"
+                receipt=f"receipt_{req.transaction_id[:8]}",
+                idempotency_key=header_idempotency_key or f"exec_order_{req.transaction_id}",
             )
             if rzp_res.get("success"):
                 result["razorpay_order_id"] = rzp_res.get("order_id")
+                result["idempotent_replay"] = rzp_res.get("idempotent_replay", False)
 
         return result
 

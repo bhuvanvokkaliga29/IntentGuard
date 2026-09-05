@@ -80,19 +80,37 @@ class Mandate(MandateBase):
 
 # ── Transaction ──────────────────────────────────────────────
 
+# ── Transaction ──────────────────────────────────────────────
+
 class TransactionBase(BaseModel):
-    """Base transaction fields."""
-    mandate_id: str = Field(..., description="Reference to the mandate this transaction is under")
-    amount: float = Field(..., gt=0)
-    merchant_name: str = Field(..., max_length=250)
-    merchant_category: str = Field(..., max_length=100)
-    item_description: str = Field(..., max_length=1000)
+    """Base transaction fields with strict validation."""
+    mandate_id: str = Field(..., min_length=1, max_length=100, description="Reference to the mandate this transaction is under")
+    amount: float = Field(..., gt=0.0, le=10_000_000.0, description="Transaction amount in major currency units")
+    currency: str = Field(default="INR", min_length=3, max_length=3, description="ISO 4217 3-letter currency code")
+    merchant_name: str = Field(..., min_length=1, max_length=250, description="Name of the merchant")
+    merchant_category: str = Field(..., min_length=1, max_length=100, description="Category of the merchant")
+    item_description: str = Field(..., min_length=1, max_length=1000, description="Item description provided in proposal")
+    proposer_agent: Optional[str] = Field(None, max_length=150, description="Identity of proposing agent")
+    declared_purpose: Optional[str] = Field(None, max_length=1000, description="Agent-declared purpose context")
     timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+    @field_validator("merchant_name", "merchant_category", "item_description", mode="before")
+    @classmethod
+    def sanitize_strings(cls, v: Any) -> str:
+        """Strip whitespace and reject blank input strings."""
+        if not isinstance(v, str) or not v.strip():
+            raise ValueError("Field cannot be empty or whitespace-only")
+        return v.strip()
 
 
 class TransactionCreate(TransactionBase):
     """Schema for creating a transaction (runtime — no ground truth)."""
     pass
+
+
+class TransactionProposalCreate(TransactionBase):
+    """Explicit transaction proposal emitted by an autonomous agent."""
+    idempotency_key: Optional[str] = Field(None, max_length=100, description="Client/Agent idempotency key")
 
 
 class Transaction(TransactionBase):
@@ -122,12 +140,24 @@ class TransactionRuntime(TransactionBase):
 # ── Structural Check Result ──────────────────────────────────
 
 class ConstraintCheck(BaseModel):
-    """Result of a single hard constraint check."""
+    """Result of a single hard constraint check with structured evidence."""
     constraint_name: str
     passed: bool
+    status: str = Field(default="PASS", description="'PASS', 'FAIL', or 'NOT_APPLICABLE'")
     detail: str
     value_checked: Optional[str] = None
     limit: Optional[str] = None
+    observed: Optional[str] = None
+    expected: Optional[str] = None
+
+    def model_post_init(self, __context: Any) -> None:
+        """Synchronize status, observed, and expected if not explicitly supplied."""
+        if not self.status:
+            self.status = "PASS" if self.passed else "FAIL"
+        if not self.observed and self.value_checked:
+            self.observed = str(self.value_checked)
+        if not self.expected and self.limit:
+            self.expected = str(self.limit)
 
 
 class StructuralResult(BaseModel):

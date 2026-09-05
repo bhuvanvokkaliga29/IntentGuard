@@ -107,7 +107,11 @@ class MockProvider(LLMProvider):
         p_lower = prompt.lower()
         # Isolate transaction data section to avoid matching prompt template instructions
         data_text = p_lower
-        if "transaction data:" in p_lower:
+        if "<untrusted_transaction_data>" in p_lower:
+            data_text = p_lower.split("<untrusted_transaction_data>", 1)[1]
+            if "</untrusted_transaction_data>" in data_text:
+                data_text = data_text.split("</untrusted_transaction_data>", 1)[0]
+        elif "transaction data:" in p_lower:
             data_text = p_lower.split("transaction data:", 1)[1]
             if "mandate context" in data_text:
                 data_text = data_text.split("mandate context", 1)[0]
@@ -152,7 +156,11 @@ class MockProvider(LLMProvider):
 
         # Isolate item description and original transaction to avoid matching template instructions (e.g. Rule 7 chocolates)
         item_text = p_lower
-        if "original transaction:" in p_lower:
+        if "<untrusted_transaction_data>" in p_lower:
+            item_text = p_lower.split("<untrusted_transaction_data>", 1)[1]
+            if "</untrusted_transaction_data>" in item_text:
+                item_text = item_text.split("</untrusted_transaction_data>", 1)[0]
+        elif "original transaction:" in p_lower:
             item_text = p_lower.split("original transaction:", 1)[1]
         elif "item:" in p_lower:
             item_text = p_lower.split("item:", 1)[1]
