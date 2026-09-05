@@ -42,8 +42,7 @@
 14. [Production-Oriented Architecture vs. Standard LLM Wrappers](#14-production-oriented-architecture-vs-standard-llm-wrappers)
 15. [Financial Execution Adapter & Razorpay Positioning](#15-financial-execution-adapter--razorpay-positioning)
 16. [Documentation Index & ADRs](#16-documentation-index--adrs)
-17. [Frequently Asked Questions (Judge & Developer FAQ)](#17-frequently-asked-questions-judge--developer-faq)
-18. [License](#18-license)
+17. [License](#17-license)
 
 ---
 
@@ -619,64 +618,6 @@ The authoritative execution boundary (`backend/execution/razorpay_gateway.py`) e
 
 ---
 
-## 17. Frequently Asked Questions (Judge & Developer FAQ)
-
-### 🏛️ Architecture & Governance
-
-#### Q1: Why can't existing payment gateways or bank rules solve Semantic Financial Drift?
-> **A:** Traditional payment gateways evaluate transactions using binary, metadata-level rules: `amount <= limit`, `MCC valid`, and `merchant in allowlist`. In agentic commerce, an autonomous agent tasked with purchasing *"office supplies up to ₹2,000"* can legally purchase a **₹1,950 box of luxury chocolates** at an approved stationery store. Both the merchant and transaction amount satisfy traditional numerical rules, draining corporate funds on out-of-scope personal luxuries. IntentGuard introduces a supervisory semantic control layer that inspects the *underlying purpose* of the item against human intent before financial execution.
-
-#### Q2: Does the LLM make the final financial authorization decision?
-> **A:** **No. Zero-LLM Direct Authority.** LLMs are strictly bounded to probabilistic semantic fact extraction and multi-sample entailment consensus. The final verdict (`ALLOW`, `BLOCK`, `ESCALATE`) is evaluated exclusively by a **deterministic Python state matrix** ([`backend/policy/decision.py`](backend/policy/decision.py)). Structural violations (e.g., budget exceeded or prohibited merchant) are blocked immediately by Python code without invoking an LLM.
-
-#### Q3: What is the architectural relationship between IntentGuard and Razorpay?
-> **A:** IntentGuard operates as a **supervisory financial control plane** that sits upstream of settlement rails. Once a proposal passes deterministic verification with `ALLOW`, the authoritative execution gateway ([`backend/execution/razorpay_gateway.py`](backend/execution/razorpay_gateway.py)) triggers settlement via the official Razorpay SDK (`LIVE_RAZORPAY`, `TEST_MODE`, or offline `MOCK_ADAPTER`). Transactions flagged as `BLOCK` or `ESCALATE` are structurally rejected at the boundary and cannot trigger payment.
-
----
-
-### 🛡️ Security, Reliability & Invariants
-
-#### Q4: How does IntentGuard prevent prompt injection and adversarial manipulation?
-> **A:** IntentGuard enforces multi-layer defense in depth:
-> 1. **Zero-Credential Isolation:** Autonomous proposer agents operate in a sandbox with zero access to payment APIs or credentials.
-> 2. **Multi-Surface Recursive Scanning:** [`backend/security/prompt_defense.py`](backend/security/prompt_defense.py) recursively inspects dictionary keys, nested objects, and list elements with Unicode NFKC normalization and zero-width cloaking stripping.
-> 3. **Deterministic Gate Invariance:** Even if an adversarial prompt tricks an LLM into outputting high confidence, hard constraints (budget, merchant allowlist, legal entity boundaries) cannot be overridden by model outputs.
-
-#### Q5: What happens if an LLM provider encounters rate limits (429), timeouts, or service outages?
-> **A:** IntentGuard follows a strict **fail-closed (safe default)** architecture. If an LLM provider times out, returns HTTP 429, or outputs malformed JSON, the pipeline deterministically routes the transaction to **`ESCALATE` (Human Review)** or **`BLOCK`**. It **never fails open to `ALLOW`**.
-
-#### Q6: How is the audit trail protected against retroactive modification?
-> **A:** Every decision and human review action is committed to SQLite using a **Cryptographic Tamper-Evident Audit Chain** ([`backend/db.py`](backend/db.py)). Each entry calculates a SHA-256 hash linking the `previous_record_hash`, decision ID, mandate ID, sequence number, and structural checks. Any unauthorized insertion, modification, or reordering breaks the chain and is detected via `GET /audit/chain/verify`.
-
----
-
-### 🧪 Developer & Evaluation Reproducibility
-
-#### Q7: How can evaluators reproduce the test suites and benchmark results locally?
-> **A:** All tests and evaluation benchmarks are 100% reproducible with single commands:
-> - **Full Test Suite (202 Tests):**
->   ```bash
->   python -m pytest backend/tests/ -v    # 195 backend & invariant tests
->   npm --prefix frontend test           # 7 Vitest scenario tests
->   ```
-> - **9-Step Integration Smoke Verification:**
->   ```bash
->   python scripts/smoke_test.py
->   ```
-> - **Automated Repository & Secret Audit:**
->   ```bash
->   python scripts/repo_audit.py
->   ```
-> - **Offline Benchmark Evaluation (3 Baselines):**
->   ```bash
->   python scripts/evaluate.py --provider mock
->   ```
-
-#### Q8: Are paid API keys required to run and test IntentGuard?
-> **A:** **No.** IntentGuard includes a fully deterministic offline simulation mode (`LLM_PROVIDER=mock`, `MOCK_ADAPTER`) that requires **zero external API keys** and executes offline. To test against live frontier models or live Razorpay gateways, simply add `GEMINI_API_KEY`, `XAI_API_KEY`, or `RAZORPAY_KEY_ID` to `.env`.
-
----
-
-## 18. License
+## 17. License
 
 Distributed under the MIT License. See [`LICENSE`](LICENSE) for details.
