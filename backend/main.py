@@ -218,6 +218,22 @@ class SimulateRequest(BaseModel):
 class HumanReviewRequest(BaseModel):
     action: str = Field(..., description="APPROVE, REJECT, or REQUEST_INFO")
     notes: Optional[str] = None
+    reviewer_id: Optional[str] = Field(None, description="Identity of the reviewing compliance officer")
+    correlation_id: Optional[str] = Field(None, description="Audit correlation tracking identifier")
+
+
+class TaskEvaluateRequest(BaseModel):
+    transaction_id: str
+    mandate_id: Optional[str] = None
+    proposer_agent_type: Optional[str] = "buying_agent"
+    objective: Optional[str] = "BEST_RATING"
+
+
+class TaskEnqueueResponse(BaseModel):
+    task_id: str
+    status: str
+    created_at: str
+    poll_url: str
 
 
 # ── Health & Config ──────────────────────────────────────────
@@ -260,6 +276,7 @@ async def health():
 
 
 @app.get("/ready")
+@app.get("/health/ready")
 async def readiness():
     """
     Readiness probe endpoint.
@@ -507,15 +524,11 @@ async def run_live_simulation(req: SimulateRequest):
             mandate_id=mandate["id"],
         )
 
-    if result.get("final_decision") == "ALLOW":
-        from backend.execution.razorpay_gateway import get_razorpay_gateway
-        gateway = get_razorpay_gateway()
-        rzp_res = gateway.create_order(
-            amount=txn_dict.get("amount", 100.0),
-            receipt=f"receipt_{txn_id[:8]}"
-        )
-        if rzp_res.get("success"):
-            result["razorpay_order_id"] = rzp_res.get("order_id")
+    # Authoritative execution dispatched via stage_guard_execution_boundary
+    exec_order = result.get("execution_result", {}).get("order")
+    if exec_order and exec_order.get("success"):
+        result["razorpay_order_id"] = exec_order.get("order_id")
+        result["idempotent_replay"] = exec_order.get("idempotent_replay", False)
 
     # 4. Construct detailed step-by-step animation trace
     timeline_steps = [
@@ -645,17 +658,11 @@ async def evaluate_proposal_endpoint(
         if isinstance(result, dict) and result.get("error") and result.get("decision_id") is None:
             raise HTTPException(status_code=500, detail=result["error"])
 
-        if result.get("final_decision") == "ALLOW":
-            from backend.execution.razorpay_gateway import get_razorpay_gateway
-            gateway = get_razorpay_gateway()
-            rzp_res = gateway.create_order(
-                amount=validated_proposal["amount"],
-                receipt=f"receipt_{txn_row.id[:8]}",
-                idempotency_key=validated_proposal.get("idempotency_key"),
-            )
-            if rzp_res.get("success"):
-                result["razorpay_order_id"] = rzp_res.get("order_id")
-                result["idempotent_replay"] = rzp_res.get("idempotent_replay", False)
+        # Authoritative execution dispatched via stage_guard_execution_boundary
+        exec_order = result.get("execution_result", {}).get("order")
+        if exec_order and exec_order.get("success"):
+            result["razorpay_order_id"] = exec_order.get("order_id")
+            result["idempotent_replay"] = exec_order.get("idempotent_replay", False)
 
         return result
 
@@ -673,27 +680,17 @@ async def evaluate_transaction_endpoint(req: EvaluateRequest, request: Request):
             session=session,
             transaction_id=req.transaction_id,
             mandate_id=req.mandate_id,
+            idempotency_key=header_idempotency_key,
         )
 
         if isinstance(result, dict) and result.get("error") and result.get("decision_id") is None:
             raise HTTPException(status_code=500, detail=result["error"])
 
-        if result.get("final_decision") == "ALLOW":
-            from backend.execution.razorpay_gateway import get_razorpay_gateway
-            from backend.db import get_transaction
-            
-            txn_row = await get_transaction(session, req.transaction_id)
-            txn_amount = txn_row.amount if txn_row else 100.0
-            
-            gateway = get_razorpay_gateway()
-            rzp_res = gateway.create_order(
-                amount=txn_amount,
-                receipt=f"receipt_{req.transaction_id[:8]}",
-                idempotency_key=header_idempotency_key or f"exec_order_{req.transaction_id}",
-            )
-            if rzp_res.get("success"):
-                result["razorpay_order_id"] = rzp_res.get("order_id")
-                result["idempotent_replay"] = rzp_res.get("idempotent_replay", False)
+        # Authoritative execution dispatched via stage_guard_execution_boundary
+        exec_order = result.get("execution_result", {}).get("order")
+        if exec_order and exec_order.get("success"):
+            result["razorpay_order_id"] = exec_order.get("order_id")
+            result["idempotent_replay"] = exec_order.get("idempotent_replay", False)
 
         return result
 
@@ -718,15 +715,70 @@ async def list_decisions_endpoint():
         return [decision_row_to_dict(r) for r in rows]
 
 
-@app.post("/decisions/{decision_id}/review")
+@app.post("/decisions/{decision_id}/review", dependencies=[Depends(rate_limit_guard)])
 async def review_decision_endpoint(decision_id: str, req: HumanReviewRequest):
-    """Update human review decision for flagged/escalated cases."""
+    """Update human review decision for flagged/escalated cases and route approval through execution gate."""
     session = await get_session()
     async with session:
-        row = await update_decision_review(session, decision_id, req.action, req.notes)
+        row = await update_decision_review(
+            session=session,
+            decision_id=decision_id,
+            action=req.action,
+            notes=req.notes,
+            reviewer_id=req.reviewer_id,
+            correlation_id=req.correlation_id,
+        )
         if row is None:
             raise HTTPException(status_code=404, detail="Decision not found")
-        return decision_row_to_dict(row)
+
+        resp_dict = decision_row_to_dict(row)
+
+        # If human approved, route proposal to the authoritative execution boundary
+        if req.action.upper() in ("APPROVE", "APPROVED"):
+            from backend.orchestrator.pipeline import stage_guard_execution_boundary
+            from backend.db import get_transaction, transaction_row_to_dict
+            txn_row = await get_transaction(session, row.transaction_id)
+            if txn_row:
+                txn = transaction_row_to_dict(txn_row)
+                exec_result = stage_guard_execution_boundary(
+                    final_decision="ALLOW",
+                    proposal={
+                        "id": row.transaction_id,
+                        "amount": float(txn.get("amount", 0.0)),
+                        "currency": str(txn.get("currency", "INR")),
+                        "merchant_name": str(txn.get("merchant_name", "Unknown")),
+                        "item_description": str(txn.get("item_description", "")),
+                        "idempotency_key": f"review-{decision_id}",
+                    },
+                )
+                resp_dict["execution_result"] = exec_result
+
+        return resp_dict
+
+
+# ── Asynchronous Task Endpoints ──────────────────────────────
+
+@app.post("/tasks/evaluate", response_model=TaskEnqueueResponse, status_code=202, dependencies=[Depends(rate_limit_guard), Depends(require_api_key)])
+async def enqueue_async_evaluation_endpoint(req: TaskEvaluateRequest):
+    """Enqueue an asynchronous financial verification task to background workers."""
+    from backend.tasks import submit_async_evaluation
+    result = await submit_async_evaluation(
+        transaction_id=req.transaction_id,
+        mandate_id=req.mandate_id,
+        proposer_agent_type=req.proposer_agent_type,
+        objective=req.objective,
+    )
+    return result
+
+
+@app.get("/tasks/{task_id}")
+async def get_async_task_status_endpoint(task_id: str):
+    """Retrieve current state and result of an asynchronous task."""
+    from backend.tasks import get_task_status
+    status = await get_task_status(task_id)
+    if status is None:
+        raise HTTPException(status_code=404, detail="Task not found")
+    return status
 
 
 # ── Audit Endpoints ──────────────────────────────────────────

@@ -21,6 +21,6 @@
 - Semantic Entailment: **NO_FIT**
 - Deterministic Decision: **FLAG / BLOCK**
 
-### Step 5: Immutable Audit Ledger & Human Review
+### Step 5: Cryptographic Tamper-Evident Audit Chain & Human Review
 - Transaction routed to Human Review Queue.
 - Full execution trace persisted to SQLite ledger.

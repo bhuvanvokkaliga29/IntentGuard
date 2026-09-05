@@ -1,7 +1,7 @@
 {
   "evaluation_name": "IntentGuard Benchmark Evaluation Report",
   "benchmark_mode": "offline_mock",
-  "timestamp": "2026-09-03T08:53:39.938105+00:00",
+  "timestamp": "2026-09-05T08:34:21.567157+00:00",
   "dataset_path": "backend/data/synthetic_dataset.json",
   "dataset_name": "IntentGuard Synthetic Agent Benchmark",
   "dataset_seed": 42,
@@ -12,7 +12,7 @@
   "model": "mock-semantic-simulator",
   "policy_version": "v1.0",
   "prompt_version": "v1",
-  "elapsed_seconds": 0.008,
+  "elapsed_seconds": 0.012,
   "total_llm_errors": 0,
   "avg_llm_latency_ms": null,
   "ground_truth_distribution": {

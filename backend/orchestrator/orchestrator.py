@@ -355,14 +355,10 @@ class AgentOrchestrator:
 
             decision_outcome = guard_result.get("final_decision", "FLAG")
 
-            if decision_outcome == "ALLOW":
-                gateway = get_razorpay_gateway()
-                rzp_res = gateway.create_order(
-                    amount=selected_item.get("price", 100.0),
-                    receipt=f"receipt_{run_id[:8]}"
-                )
-                if rzp_res.get("success"):
-                    guard_result["razorpay_order_id"] = rzp_res.get("order_id")
+            # Authoritative execution dispatched via stage_guard_execution_boundary
+            exec_order = guard_result.get("execution_result", {}).get("order")
+            if exec_order and exec_order.get("success"):
+                guard_result["razorpay_order_id"] = exec_order.get("order_id")
 
             await self.event_bus.publish(
                 event_type="intentguard.decision.created",

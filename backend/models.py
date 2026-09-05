@@ -150,14 +150,24 @@ class ConstraintCheck(BaseModel):
     observed: Optional[str] = None
     expected: Optional[str] = None
 
+    check: Optional[str] = None
+    result: Optional[str] = None
+    reason: Optional[str] = None
+
     def model_post_init(self, __context: Any) -> None:
-        """Synchronize status, observed, and expected if not explicitly supplied."""
+        """Synchronize status, observed, expected, check, result, and reason fields."""
         if not self.status:
             self.status = "PASS" if self.passed else "FAIL"
         if not self.observed and self.value_checked:
             self.observed = str(self.value_checked)
         if not self.expected and self.limit:
             self.expected = str(self.limit)
+        if not self.check:
+            self.check = self.constraint_name
+        if not self.result:
+            self.result = self.status
+        if not self.reason:
+            self.reason = self.detail
 
 
 class StructuralResult(BaseModel):

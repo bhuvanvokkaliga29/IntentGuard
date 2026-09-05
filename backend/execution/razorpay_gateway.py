@@ -49,11 +49,20 @@ class RazorpayGateway:
         currency: str = "INR",
         receipt: Optional[str] = None,
         idempotency_key: Optional[str] = None,
+        decision: str = "ALLOW",
     ) -> Dict[str, Any]:
         """
-        Create a Razorpay Order with strict idempotency and concurrency locking.
+        Create a Razorpay Order with strict idempotency, concurrency locking, and decision gating.
         Note: Razorpay accepts amount in subunits (paise for INR). So ₹100 becomes 10000.
         """
+        if decision != "ALLOW":
+            logger.error(f"[EXECUTION GATE] Direct execution denied: decision is '{decision}' (ALLOW required)")
+            return {
+                "success": False,
+                "error": "EXECUTION_DISALLOWED",
+                "message": f"Execution rejected: Decision is '{decision}'. Only 'ALLOW' can reach financial settlement.",
+            }
+
         if not self.enabled:
             logger.info("[EXECUTION] Razorpay execution disabled via feature flag.")
             return {
@@ -115,6 +124,12 @@ class RazorpayGateway:
                 }
                 self._idempotency_store[key] = result
                 return result
+
+    def __repr__(self) -> str:
+        return f"<RazorpayGateway mode={self.mode} enabled={self.enabled}>"
+
+    def __str__(self) -> str:
+        return f"RazorpayGateway(mode={self.mode}, enabled={self.enabled})"
 
 
 _gateway: Optional[RazorpayGateway] = None

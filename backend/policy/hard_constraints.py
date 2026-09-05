@@ -75,11 +75,40 @@ def check_budget_cap(
     )
 
 
+def normalize_merchant_canonical(name: str) -> str:
+    """
+    Deterministically normalize merchant legal entity names to canonical form.
+    Handles standard corporate abbreviations (Pvt Ltd, Private Limited, Ltd, LLC, Inc, Corp).
+    Does NOT perform unrestricted fuzzy matching, preserving strict identity boundaries.
+    """
+    import re
+    import unicodedata
+
+    if not name:
+        return ""
+
+    # Unicode normalization & whitespace strip
+    text = unicodedata.normalize("NFKC", str(name)).strip().lower()
+
+    # Remove commas, periods, quotes
+    text = re.sub(r"[\.,'\"()]+", " ", text)
+    text = re.sub(r"\s+", " ", text).strip()
+
+    # Canonicalize corporate legal suffix at word boundary at the end of the name
+    text = re.sub(r"\b(private\s+limited|pvt\s+ltd|p\s+ltd)\b$", "pvt ltd", text)
+    text = re.sub(r"\b(limited\s+liability\s+company|l\s*l\s*c)\b$", "llc", text)
+    text = re.sub(r"\b(incorporated|inc)\b$", "inc", text)
+    text = re.sub(r"\b(corporation|corp)\b$", "corp", text)
+    text = re.sub(r"(?<!pvt\s)\b(limited|ltd)\b$", "ltd", text)
+
+    return re.sub(r"\s+", " ", text).strip()
+
+
 def check_merchant_allowed(
     merchant_name: str,
     allowed_merchants: Optional[List[str]],
 ) -> ConstraintCheck:
-    """Check if the merchant is in the allowed list."""
+    """Check if the merchant is in the allowed list using canonical normalization."""
     if allowed_merchants is None or len(allowed_merchants) == 0:
         return ConstraintCheck(
             constraint_name="allowed_merchants",
@@ -90,10 +119,10 @@ def check_merchant_allowed(
             detail="No merchant restrictions defined for this mandate.",
         )
 
-    # Case-insensitive comparison
-    merchant_lower = merchant_name.strip().lower()
-    allowed_lower = [m.strip().lower() for m in allowed_merchants]
-    passed = merchant_lower in allowed_lower
+    # Canonical legal normalization comparison
+    merchant_norm = normalize_merchant_canonical(merchant_name)
+    allowed_norm = [normalize_merchant_canonical(m) for m in allowed_merchants]
+    passed = (merchant_norm in allowed_norm) or (merchant_name.strip().lower() in [m.strip().lower() for m in allowed_merchants])
 
     return ConstraintCheck(
         constraint_name="allowed_merchants",
@@ -102,7 +131,7 @@ def check_merchant_allowed(
         observed=merchant_name,
         expected=f"Allowed list: {allowed_merchants}",
         detail=(
-            f"Merchant '{merchant_name}' is {'in' if passed else 'NOT in'} "
+            f"Merchant '{merchant_name}' (canonical: '{merchant_norm}') is {'in' if passed else 'NOT in'} "
             f"the allowed merchant list: {allowed_merchants}."
         ),
         value_checked=merchant_name,

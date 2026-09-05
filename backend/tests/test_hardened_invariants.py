@@ -369,3 +369,198 @@ async def test_invariant_8_audit_chain_sequential_and_tamper_evident():
         # Restore original state for cleanliness
         first_row.final_decision = original_decision
         await session.commit()
+
+
+# ── Invariant 9: Human Review Actions Create Chained Audit Trail ─
+@pytest.mark.asyncio
+async def test_invariant_9_human_review_actions_are_audited_and_chained():
+    """
+    When a human reviewer modifies an escalated decision (APPROVED, REJECTED, etc.),
+    a dedicated, cryptographically chained AuditLogRow must be appended.
+    The review audit event must link to original decision, transaction, mandate, and reviewer.
+    """
+    from backend.db import create_decision, update_decision_review, list_audit_logs
+
+    await init_db()
+    session_maker = await get_session()
+    async with session_maker as session:
+        mandate_id = str(uuid.uuid4())
+        txn_id = str(uuid.uuid4())
+        decision_id = str(uuid.uuid4())
+
+        # 1. Create an escalated decision
+        dec_data = {
+            "id": decision_id,
+            "transaction_id": txn_id,
+            "mandate_id": mandate_id,
+            "final_decision": "ESCALATE",
+            "confidence_score": 0.5,
+            "explanation": "Flagged for borderline intent match.",
+        }
+        await create_decision(session, dec_data)
+
+        # 2. Reviewer approves
+        reviewer_id = "compliance_officer_42"
+        notes = "Manually verified genuine business purpose with manager."
+        updated_dec = await update_decision_review(
+            session=session,
+            decision_id=decision_id,
+            action="APPROVED",
+            notes=notes,
+            reviewer_id=reviewer_id,
+        )
+        assert updated_dec.final_decision == "APPROVED"
+        assert updated_dec.reviewer_id == reviewer_id
+
+        # 3. Dedicated audit event must exist in chained audit log
+        logs = await list_audit_logs(session, limit=20)
+        review_logs = [
+            log for log in logs
+            if log.decision_id == decision_id and "HUMAN_" in str(log.final_decision)
+        ]
+        assert len(review_logs) >= 1, "Human review must produce a dedicated audit log row!"
+
+        review_audit = review_logs[0]
+        assert review_audit.final_decision == "HUMAN_APPROVED"
+        assert review_audit.mandate_id == mandate_id
+        assert review_audit.transaction_id == txn_id
+        assert review_audit.sequence_number > 0
+        assert review_audit.current_record_hash is not None
+
+        # 4. Entire cryptographic audit chain remains strictly valid
+        is_valid, errors = await verify_audit_chain(session)
+        assert is_valid is True, f"Audit chain broken after review: {errors}"
+
+
+# ── Invariant 10: Invalid Semantic Evidence Cannot Become ALLOW ─
+def test_invariant_10_invalid_or_contradictory_evidence_cannot_become_allow():
+    """
+    Contradictory semantic outputs or missing/untrusted facts must NEVER become ALLOW.
+    Must evaluate to ESCALATE or BLOCK.
+    """
+    # Case A: Missing extracted facts (LLM failed extraction)
+    res_no_facts = decide(
+        structural_pass=True,
+        majority_verdict="fit",
+        confidence_score=0.95,
+        has_extracted_facts=False,
+        evidence_is_sufficient=False,
+    )
+    assert res_no_facts["final_decision"] != "ALLOW"
+    assert res_no_facts["final_decision"] == "ESCALATE"
+
+    # Case B: Contradictory evidence / split samples
+    res_split = decide(
+        structural_pass=True,
+        majority_verdict="ambiguous",
+        confidence_score=0.45,
+        has_extracted_facts=True,
+        evidence_is_sufficient=False,
+    )
+    assert res_split["final_decision"] != "ALLOW"
+    assert res_split["final_decision"] == "ESCALATE"
+
+    # Case C: Hard structural failure with claimed semantic fit
+    res_struct_fail = decide(
+        structural_pass=False,
+        majority_verdict="fit",
+        confidence_score=0.99,
+        has_extracted_facts=True,
+        evidence_is_sufficient=True,
+    )
+    assert res_struct_fail["final_decision"] == "BLOCK"
+
+
+# ── Invariant 11: Self-Healing Cannot Modify Financial Policy ──
+def test_invariant_11_self_healing_cannot_modify_financial_policy():
+    """
+    Verify AST boundary: The self-healing subsystem has zero imports or execution
+    pathways into policy manipulation, mandate creation, or financial execution.
+    """
+    import inspect
+    from backend.agent import self_healing
+
+    source = inspect.getsource(self_healing)
+
+    # Must NOT import or call payment execution
+    assert "razorpay" not in source.lower()
+    assert "create_order" not in source.lower()
+
+    # Must NOT import mandate mutation tools
+    assert "create_mandate" not in source.lower()
+    assert "update_mandate" not in source.lower()
+
+
+# ── Invariant 12: Human Review Approval Follows Authoritative Gate ──
+@pytest.mark.asyncio
+async def test_invariant_12_human_review_approval_executes_via_gate():
+    """
+    Human review approval must route through the single authoritative execution gate,
+    rejection must not execute, and duplicate approval must remain idempotent.
+    """
+    from httpx import AsyncClient, ASGITransport
+    from backend.main import app
+    from backend.db import get_session, create_transaction, create_decision, init_db
+
+    await init_db()
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        # Create an escalated transaction and decision
+        session = await get_session()
+        async with session:
+            txn = await create_transaction(session, {
+                "id": f"txn-review-exec-{uuid.uuid4().hex[:6]}",
+                "mandate_id": "mandate-001-office-supplies",
+                "amount": 1200.0,
+                "currency": "INR",
+                "merchant_name": "Stationery Mart",
+                "merchant_category": "stationery",
+                "item_description": "Office binders special pack",
+            })
+            dec = await create_decision(session, {
+                "id": f"dec-review-exec-{uuid.uuid4().hex[:6]}",
+                "transaction_id": txn.id,
+                "mandate_id": txn.mandate_id,
+                "final_decision": "ESCALATE",
+                "confidence_score": 0.55,
+                "explanation": "Flagged for manual review due to border proximity",
+                "structural_check_result": {"overall_pass": True},
+            })
+
+        # Test 1: Rejection must NOT execute payment
+        rej_resp = await client.post(
+            f"/decisions/{dec.id}/review",
+            json={"action": "REJECTED", "notes": "Not needed this quarter", "reviewer_id": "auditor_alice"},
+        )
+        assert rej_resp.status_code == 200
+        rej_data = rej_resp.json()
+        assert rej_data["final_decision"] == "REJECTED"
+        assert "execution_result" not in rej_data
+
+        # Test 2: Approval must route through the execution boundary gate
+        app_resp = await client.post(
+            f"/decisions/{dec.id}/review",
+            json={"action": "APPROVED", "notes": "Approved by finance manager", "reviewer_id": "auditor_bob"},
+        )
+        assert app_resp.status_code == 200
+        app_data = app_resp.json()
+        assert app_data["final_decision"] == "APPROVED"
+        assert "execution_result" in app_data
+        exec_res = app_data["execution_result"]
+        assert exec_res["status"] == "DISPATCHED"
+        assert exec_res["executed"] is True
+        order_info = exec_res["order"]
+        order_id = order_info["order_id"]
+        assert order_id.startswith("order_")
+
+        # Test 3: Idempotent replay on duplicate approval
+        dup_resp = await client.post(
+            f"/decisions/{dec.id}/review",
+            json={"action": "APPROVED", "notes": "Repeated approval click", "reviewer_id": "auditor_bob"},
+        )
+        assert dup_resp.status_code == 200
+        dup_data = dup_resp.json()
+        assert dup_data["execution_result"]["order"]["order_id"] == order_id
+        assert dup_data["execution_result"]["order"]["idempotent_replay"] is True
+
+

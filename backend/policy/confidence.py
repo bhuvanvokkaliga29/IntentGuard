@@ -130,6 +130,9 @@ def compute_confidence(
 
     return {
         "confidence_score": round(confidence_score, 4),
+        "system_derived_confidence": round(confidence_score, 4),
+        "model_reported_confidence": None,
+        "confidence_provenance": "system_derived_from_consensus_and_structural_bounds",
         "agreement_rate": round(agreement_rate, 4),
         "base_confidence": round(base_confidence, 4),
         "total_adjustment": round(total_adjustment, 4),

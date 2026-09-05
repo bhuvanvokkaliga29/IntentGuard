@@ -88,6 +88,7 @@ class DecisionRow(Base):
     human_review_status: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)  # APPROVED, REJECTED, REQUEST_INFO
     human_review_notes: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     human_reviewed_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+    reviewer_id: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc))
 
 
@@ -272,6 +273,7 @@ async def init_db():
             "ALTER TABLE decisions ADD COLUMN human_review_status VARCHAR(50)",
             "ALTER TABLE decisions ADD COLUMN human_review_notes TEXT",
             "ALTER TABLE decisions ADD COLUMN human_reviewed_at DATETIME",
+            "ALTER TABLE decisions ADD COLUMN reviewer_id VARCHAR(100)",
             "ALTER TABLE audit_logs ADD COLUMN sequence_number INTEGER",
             "ALTER TABLE audit_logs ADD COLUMN previous_record_hash VARCHAR(64)",
             "ALTER TABLE audit_logs ADD COLUMN current_record_hash VARCHAR(64)",
@@ -477,26 +479,12 @@ def decision_row_to_dict(row: DecisionRow) -> dict:
         "human_review_status": row.human_review_status,
         "human_review_notes": row.human_review_notes,
         "human_reviewed_at": row.human_reviewed_at.isoformat() if row.human_reviewed_at else None,
+        "reviewer_id": row.reviewer_id,
         "created_at": row.created_at.isoformat() if row.created_at else None,
     }
 
 
-async def update_decision_review(
-    session: AsyncSession,
-    decision_id: str,
-    action: str,
-    notes: Optional[str] = None,
-) -> Optional[DecisionRow]:
-    """Update human review decision for a flagged or escalated record."""
-    row = await get_decision(session, decision_id)
-    if row is None:
-        return None
-    row.human_review_status = action.upper()
-    row.human_review_notes = notes
-    row.human_reviewed_at = datetime.now(timezone.utc)
-    await session.commit()
-    await session.refresh(row)
-    return row
+
 
 
 # ── Audit Hash Chaining & CRUD ────────────────────────────────
@@ -587,6 +575,68 @@ async def create_audit_log(session: AsyncSession, audit_data: dict) -> AuditLogR
     return row
 
 
+async def update_decision_review(
+    session: AsyncSession,
+    decision_id: str,
+    action: str,
+    notes: Optional[str] = None,
+    reviewer_id: Optional[str] = None,
+    correlation_id: Optional[str] = None,
+) -> Optional[DecisionRow]:
+    """
+    Update human review decision for a flagged or escalated record.
+    Strictly appends a cryptographically chained audit log entry to preserve
+    ledger integrity across human review transitions.
+    """
+    row = await get_decision(session, decision_id)
+    if row is None:
+        return None
+
+    prev_status = row.human_review_status or "PENDING"
+    prev_decision = row.final_decision
+    new_status = action.upper()
+    now = datetime.now(timezone.utc)
+
+    row.human_review_status = new_status
+    row.human_review_notes = notes
+    row.human_reviewed_at = now
+    row.reviewer_id = reviewer_id
+    row.final_decision = new_status
+
+    # Append dedicated cryptographically chained audit log entry
+    audit_data = {
+        "id": str(uuid.uuid4()),
+        "decision_id": row.id,
+        "request_id": correlation_id or str(uuid.uuid4()),
+        "mandate_id": row.mandate_id,
+        "transaction_id": row.transaction_id,
+        "final_decision": f"HUMAN_{new_status}",
+        "explanation": (
+            f"Human review action '{new_status}' executed on decision {decision_id}. "
+            f"Previous status: {prev_status}. Reviewer: {reviewer_id or 'human_compliance_officer'}. "
+            f"Notes: {notes or 'None provided'}."
+        ),
+        "structural_result": {
+            "event_type": "HUMAN_REVIEW_TRANSITION",
+            "action": new_status,
+            "previous_status": prev_status,
+            "reviewer_id": reviewer_id or "human_compliance_officer",
+            "notes": notes,
+        },
+        "confidence_calculation": {
+            "confidence_score": 1.0,
+            "review_override": True,
+            "reviewer_id": reviewer_id or "human_compliance_officer",
+        },
+        "timestamp": now,
+    }
+    await create_audit_log(session, audit_data)
+
+    await session.commit()
+    await session.refresh(row)
+    return row
+
+
 async def verify_audit_chain(session: AsyncSession) -> Tuple[bool, List[str]]:
     """
     Verify the cryptographic integrity of the entire audit log hash chain.
@@ -650,10 +700,13 @@ async def get_audit_log(session: AsyncSession, decision_id: str) -> Optional[Aud
     return result.scalar_one_or_none()
 
 
-async def list_audit_logs(session: AsyncSession) -> List[AuditLogRow]:
+async def list_audit_logs(session: AsyncSession, limit: Optional[int] = None) -> List[AuditLogRow]:
     """List all audit logs."""
     from sqlalchemy import select
-    result = await session.execute(select(AuditLogRow).order_by(AuditLogRow.timestamp.desc()))
+    query = select(AuditLogRow).order_by(AuditLogRow.timestamp.desc())
+    if limit:
+        query = query.limit(limit)
+    result = await session.execute(query)
     return list(result.scalars().all())
 
 

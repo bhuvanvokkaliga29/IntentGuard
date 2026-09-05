@@ -2,7 +2,7 @@
 
 > ### **Semantic Authorization & Real-Time Control Layer for Autonomous Financial AI Agents**
 > **Razorpay AI Buildathon 2026 · Track 5 — Open Track**
-> *Control infrastructure for autonomous financial agents: verifying that agent proposals remain within authorized spending scope before financial execution.*
+> *Working financial control platform with a production-oriented supervisory architecture.*
 
 > [!IMPORTANT]
 > 📁 **Official Submission Deliverables (Drive Link):**  
@@ -14,10 +14,11 @@
 [![Submission Deliverables](https://img.shields.io/badge/Google%20Drive-Pitch%20Video%20%7C%20PPT%20%7C%20Report%20%7C%20Diagram-blue?logo=googledrive&logoColor=white)](https://drive.google.com/drive/folders/1AIyxBjPHNvt34e-GSlBprti9K33sl2ij?usp=sharing)
 [![CI/CD Pipeline](https://github.com/bhuvanvokkaliga29/IntentGuard/actions/workflows/ci.yml/badge.svg)](https://github.com/bhuvanvokkaliga29/IntentGuard/actions)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![Tests: 163 Passed](https://img.shields.io/badge/Tests-163%20Passed-brightgreen.svg)](docs/REPOSITORY_HEALTH.md)
+[![Tests: 202 Passed](https://img.shields.io/badge/Tests-202%20Passed-brightgreen.svg)](docs/REPOSITORY_HEALTH.md)
 [![Python: 3.10+](https://img.shields.io/badge/Python-3.10%2B-blue.svg)](https://www.python.org/)
 [![FastAPI: Backend](https://img.shields.io/badge/FastAPI-0.110.0-009688.svg)](https://fastapi.tiangolo.com/)
-[![Audit Chain: SHA-256](https://img.shields.io/badge/Audit%20Ledger-Cryptographic%20Hash%20Chain-blueviolet.svg)](backend/db.py)
+[![Audit Chain: SHA-256](https://img.shields.io/badge/Audit%20Chain-Cryptographic%20Tamper--Evident-blueviolet.svg)](backend/db.py)
+[![Invariants: Verified](https://img.shields.io/badge/Invariants-Critical%20Authorization%20Verified-brightgreen.svg)](docs/FINAL_ENGINEERING_REPORT.md)
 [![UI: Professional](https://img.shields.io/badge/Theme-Fintech%20Control%20Plane-6366f1.svg)](frontend/)
 [![Payment Execution](https://img.shields.io/badge/Gateway-Razorpay%20Integrated-0b72e7.svg?logo=razorpay)](https://razorpay.com/)
 
@@ -38,8 +39,10 @@
 11. [Threat Model & Prompt Injection Defenses](#11-threat-model--prompt-injection-defenses)
 12. [Repository Structure](#12-repository-structure)
 13. [Quickstart: 1-Command Local Setup](#13-quickstart-1-command-local-setup)
-14. [Production Architecture vs. Standard LLM Wrappers](#14-production-architecture-vs-standard-llm-wrappers)
-15. [Documentation Index & ADRs](#15-documentation-index--adrs)
+14. [Production-Oriented Architecture vs. Standard LLM Wrappers](#14-production-oriented-architecture-vs-standard-llm-wrappers)
+15. [Financial Execution Adapter & Razorpay Positioning](#15-financial-execution-adapter--razorpay-positioning)
+16. [Documentation Index & ADRs](#16-documentation-index--adrs)
+17. [License](#17-license)
 
 ---
 
@@ -109,10 +112,10 @@ INTENTGUARD CONTROL LAYER (Semantic + Structural):
 |                        └────────────────┬────────────────┘                  |
 +─────────────────────────────────────────┼───────────────────────────────────+
                                           │
-                         ┌─────────────────┴─────────────────┐
-                         ▼                                   ▼
-             [🚀 RAZORPAY EXECUTION 🚀]           [APPEND-ORIENTED AUDIT LEDGER]
-         (Instant API Settlement via Razorpay)       (Structured execution trace)
+                          ┌─────────────────┴─────────────────┐
+                          ▼                                   ▼
+              [🚀 RAZORPAY EXECUTION 🚀]     [CRYPTOGRAPHIC TAMPER-EVIDENT AUDIT CHAIN]
+          (Instant API Settlement via Razorpay)       (Structured execution trace)
 ```
 
 ---
@@ -181,7 +184,7 @@ flowchart TD
 
     %% ── OBSERVABILITY & AUDITABILITY ──
     subgraph OBSERVABILITY ["📜 6. OBSERVABILITY & ACCOUNTABILITY"]
-        AuditLedger[("Immutable Audit Ledger<br/><i>(Tamper-proof SQLite record)</i>")]:::obsZone
+        AuditLedger[("Cryptographic Tamper-Evident Audit Chain<br/><i>(SHA-256 Hash-Linked Ledger)</i>")]:::obsZone
     end
 
     %% ── OFFLINE BENCHMARK SUBSYSTEM ──
@@ -272,7 +275,7 @@ The **Main IntentGuard Verifier Agent** (`backend/agent/agent.py`) executes 4 di
 - **Concept:** Self-Consistency Entailment Sampling ($N=3$).
 - **The Core Question Evaluated:**
   > *"Does this transaction constitute a reasonable and necessary instance of the user's spending mandate intent?"*
-- **Allowed Verdicts:** `direct_fit` | `related_fit` | `no_fit` | `ambiguous`
+- **Allowed Verdicts:** `fit` | `no_fit` | `ambiguous`
 - **Consensus Derivation:** Calculates the majority verdict and sample agreement rate ($1.0$, $0.67$, or $0.33$).
 
 ---
@@ -315,11 +318,11 @@ The LLM outputs untrusted semantic evidence. Final financial authorization is ma
 | Structural Check | Semantic Consensus | Confidence Score | Final Decision | System Action |
 |---|---|---|---|---|
 | **FAIL** | *Any* | *Any* | **`BLOCK`** ❌ | Transaction terminated immediately. |
-| **PASS** | `direct_fit` | $\ge 0.75$ (High) | **`ALLOW`** ✅ | Approved for automated Razorpay execution. |
-| **PASS** | `direct_fit` | $< 0.75$ (Low/Border) | **`FLAG`** ⚠️ | Sent to Human Review Queue. |
+| **PASS** | `fit` | $\ge 0.75$ (High) | **`ALLOW`** ✅ | Approved for automated Razorpay execution. |
+| **PASS** | `fit` | $< 0.75$ (Low/Border) | **`ESCALATE`** ⚠️ | Sent to Human Review Queue. |
 | **PASS** | `no_fit` (Semantic Drift) | $\ge 0.75$ (High) | **`BLOCK`** ❌ | Hard semantic mismatch intercepted. |
-| **PASS** | `no_fit` | $< 0.75$ | **`FLAG`** ⚠️ | Flagged for merchant intent verification. |
-| **PASS** | `ambiguous` / Vague SKU | *Any* | **`ESCALATE`** ❓ | Escalated to manager due to insufficient data. |
+| **PASS** | `no_fit` | $< 0.75$ | **`ESCALATE`** ⚠️ | Sent to Human Review Queue. |
+| **PASS** | `ambiguous` / Vague SKU | *Any* | **`ESCALATE`** ❓ | Escalated to human review due to insufficient data. |
 
 ---
 
@@ -336,7 +339,7 @@ EVENT BUS EMISSIONS:
 ├─► agent.recovery.started (Fault detected, retry backoff initiated)
 ├─► intentguard.started (Proposal intercepted at security gateway)
 ├─► intentguard.decision.created (ALLOW | FLAG | BLOCK with confidence derivation)
-└─► agent.completed (Immutable audit ID assigned)
+└─► agent.completed (Tamper-evident audit chain ID assigned)
 ```
 
 ### 🔒 Observable Reasoning Summaries (Zero Private CoT Leakage)
@@ -378,24 +381,25 @@ IntentGuard implements an autonomous Self-Healing Engine ([`backend/agent/self_h
 
 ## 10. Benchmark Evaluation & Baseline Comparisons
 
-IntentGuard was evaluated against a **500-case deterministic benchmark dataset** (`backend/data/synthetic_dataset.json`) with a held-out test split across three baseline architectures:
+IntentGuard is evaluated across three baseline configurations using the reproducible evaluation runner (`scripts/evaluate.py`):
 
 ```bash
-python scripts/generate_dataset.py --seed 42 --count 500  # Generates 500 deterministic evaluation cases
-python scripts/evaluate.py --provider gemini --limit 30  # Live LLM Performance Benchmark
-python scripts/evaluate.py --provider mock               # Offline Mock Benchmark (CI/Regression)
+# Offline benchmark runner (held-out test split, deterministic evaluation)
+python scripts/evaluate.py --provider mock
+
+# Live LLM benchmark runner (evaluates real Gemini semantic reasoning)
+python scripts/evaluate.py --provider gemini --limit 30
 ```
 
-### 📊 Benchmark Results:
-*IntentGuard was rigorously evaluated against a 500-case deterministic adversarial benchmark to prove architectural superiority:*
+### 📊 Benchmark Results (Held-Out Test Split):
 
 | Architecture | Description | Strict Accuracy | False-Allow Rate | False-Block Rate | Escalation Rate |
-|---|---|---|---|---|---|
-| **Baseline 1: Structural-Only** | Traditional gateway rules (Amount limit, MCC code) | 88.0% | **11.0%** ⚠️ | 1.0% | 0.0% |
-| **Baseline 2: IntentGuard Hybrid** | **Structural + Multi-Sample Semantic + Deterministic Policy** | **99.0%** 🏆 | **0.0%** 🛡️ | 1.0% | 10.0% |
-| **Baseline 3: Pure Semantic** | Unconstrained LLM without deterministic structural bounds | 93.0% | 7.0% | 0.0% | 10.0% |
+|---|---|:---:|:---:|:---:|:---:|
+| **Baseline 1: Structural-Only** | Traditional gateway rules (Amount limit, merchant allowlist, MCC) | 90.0% | **5.0%** ⚠️ | 5.0% | 0.0% |
+| **Baseline 2: IntentGuard Hybrid** | **Structural Checks + Semantic Entailment + Deterministic Policy Matrix** | **95.0%** 🏆 | **0.0%** 🛡️ | 5.0% | 5.0% |
+| **Baseline 3: Pure Semantic** | Unconstrained LLM without deterministic structural hard limits | 100.0% | 0.0% | 0.0% | 5.0% |
 
-> **Key Takeaway:** IntentGuard eliminates the **11.0% false-allow vulnerability** of traditional gateways (0.0% false-allows) while safely routing **10.0% of ambiguous/insufficient context cases to human review** (`ESCALATE`).
+> **Key Architectural Proof:** Traditional numerical gateways allow out-of-scope semantic drift transactions to drain funds because the purchase price and vendor satisfy structural limits (e.g. purchasing luxury chocolates at an approved office supply merchant). The IntentGuard hybrid control layer completely eliminates this vulnerability (**0.0% false-allow rate**) while safely routing ambiguous edge cases to human review (`ESCALATE`).
 
 ---
 
@@ -460,7 +464,7 @@ IntentGuard/
 │   │   ├── grok.py                    # xAI Grok 3 Mini implementation
 │   │   └── schemas.py                 # Strict Pydantic output validation schemas
 │   │
-│   └── tests/                         # Automated Pytest Test Suite (77 Tests)
+│   └── tests/                         # Automated Pytest Test Suite (195 Backend Tests)
 │       ├── test_agent_orchestrator.py
 │       ├── test_structural.py
 │       ├── test_semantic.py
@@ -505,7 +509,7 @@ IntentGuard/
 └── scripts/                           # Developer Automation & Quality Scripts
     ├── generate_dataset.py            # 500-sample deterministic dataset generator
     ├── evaluate.py                    # Baseline evaluation benchmark runner
-    ├── smoke_test.py                  # 8-step end-to-end integration test
+    ├── smoke_test.py                  # 9-step end-to-end integration smoke test
     └── repo_audit.py                  # Automated security & secret scanning audit
 ```
 
@@ -542,8 +546,8 @@ make dev
 
 ### 🧪 Verification & Audit Commands:
 ```bash
-make test       # Runs all 102 unit & integration tests
-make smoke      # Runs complete 8-step end-to-end integration test
+make test       # Runs all 201 unit, invariant, and integration tests
+make smoke      # Runs complete 9-step end-to-end integration smoke test
 make seed       # Generates 500-case deterministic benchmark dataset
 make evaluate   # Evaluates benchmark against Baseline 1, 2, and 3
 make audit      # Runs automated repository security and secret audit
@@ -551,9 +555,9 @@ make audit      # Runs automated repository security and secret audit
 
 ---
 
-## 14. Production Architecture vs. Standard LLM Wrappers
+## 14. Production-Oriented Architecture vs. Standard LLM Wrappers
 
-| Architectural Dimension | Standard LLM Wrappers & Scripts | IntentGuard Production-Grade Architecture |
+| Architectural Dimension | Standard LLM Wrappers & Scripts | IntentGuard Production-Oriented Architecture |
 |---|---|---|
 | **Core Innovation** | Simple chatbot or wrapper around an LLM | **Semantic Authorization Control Layer** solving financial drift in multi-agent workflows |
 | **Technical Depth** | Hardcoded mock outputs in frontend | **Real 11-stage FSM backend, real tools, multi-sample entailment, SQLite/Postgres persistence** |
@@ -561,11 +565,33 @@ make audit      # Runs automated repository security and secret audit
 | **Agent Autonomy** | Fake scripted animations | **Autonomous worker agents executing real catalog tools with bounded self-healing** |
 | **Observability** | Static UI / Console prints | **Live Server-Sent Events (SSE) stream, trace graphs, observable reasoning summaries, Prometheus metrics** |
 | **Evaluation Rigor** | Cherry-picked demo numbers | **500-sample deterministic benchmark comparing 3 baseline architectures** |
-| **DevOps & Testing** | Unverified scripts with zero test suite | **106 Pytest tests, 7 Vitest frontend tests, 100% Green CI/CD, Alembic migrations, AWS/Vault Secrets** |
+| **DevOps & Testing** | Unverified scripts with zero test suite | **195 Pytest unit & invariant tests, 7 Vitest frontend tests (202 total passing tests), 100% Green CI/CD, Alembic migrations, AWS/Vault Secrets** |
 
 ---
 
-## 15. Documentation Index & ADRs
+## 15. Financial Execution Adapter & Razorpay Positioning
+
+### Scope & Architectural Positioning
+IntentGuard is a **working financial control platform with a production-oriented supervisory architecture** designed to complement payment infrastructure in agentic commerce.
+
+> [!NOTE]
+> IntentGuard is not an official Razorpay product and does not imply official endorsement. It serves as an independent control architecture designed to intercept semantic financial drift before fund settlement occurs at payment gateways like Razorpay.
+
+### Supported Gateway Execution Modes
+The authoritative execution boundary (`backend/execution/razorpay_gateway.py`) explicitly reports and operates in three distinct configuration modes:
+
+1. **`LIVE_RAZORPAY`**: Real-time payment execution via the official `razorpay` Python SDK. Activated only when valid production API credentials (`RAZORPAY_KEY_ID`, `RAZORPAY_KEY_SECRET`) are configured in the environment.
+2. **`TEST_MODE`**: Automated sandbox execution against Razorpay test environment endpoints (e.g. `rzp_test_...` key prefixes). Used for staging verification and end-to-end integration testing.
+3. **`MOCK_ADAPTER`**: Deterministic local mock execution adapter automatically engaged when credentials are absent or during offline CI testing. Generates structured receipts and enforces full thread-safe idempotency without making outbound network requests.
+
+### Core Execution Guarantees
+- **Strict Authorization Precondition**: The execution gateway requires an explicit deterministic decision of `ALLOW`. Proposals marked `BLOCK` or `ESCALATE` are structurally rejected at the gate and cannot trigger money movement.
+- **Idempotency & Double-Spend Defense**: Every execution request is protected by a thread-safe reentrant lock (`threading.RLock`) and tracked in an in-memory idempotency registry. Replayed proposals return `idempotent_replay: true` with the original settlement receipt.
+- **Zero Credential Exposure**: API keys and secrets are loaded via environment variables or enterprise vaults. Masked `__repr__` and `__str__` methods ensure credentials never leak into log collectors or error traces.
+
+---
+
+## 16. Documentation Index & ADRs
 
 - 📐 **System Architecture**: [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md)
 - 🔍 **Line-by-Line Code Path**: [`docs/CODE_PATH.md`](docs/CODE_PATH.md)
@@ -592,6 +618,6 @@ make audit      # Runs automated repository security and secret audit
 
 ---
 
-## 16. License
+## 17. License
 
 Distributed under the MIT License. See [`LICENSE`](LICENSE) for details.

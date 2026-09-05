@@ -2,7 +2,7 @@
 
 ## 1. System Overview
 
-IntentGuard is an authorization and control plane designed specifically for delegated AI agent spending workflows. It evaluates whether a transaction proposed by an autonomous agent fulfills the semantic purpose intended by the user, rather than checking only numerical or categorical limits.
+IntentGuard is a working financial control platform with a production-oriented supervisory architecture designed specifically for delegated AI agent spending workflows. It evaluates whether a transaction proposed by an autonomous agent fulfills the semantic purpose intended by the user, rather than checking only numerical or categorical limits.
 
 ```
 USER MANDATE + AGENT TRANSACTION PROPOSAL
@@ -37,7 +37,7 @@ USER MANDATE + AGENT TRANSACTION PROPOSAL
    ├── BLOCK: Hard Fail OR High Confidence NO_FIT
    └── ESCALATE: AMBIGUOUS OR Insufficient Evidence (< threshold)
                     ↓
-[ STAGE 7: Immutable Audit Trail & Human Review Queue ]
+[ STAGE 7: Cryptographic Tamper-Evident Audit Chain & Human Review Queue ]
 ```
 
 ---

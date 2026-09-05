@@ -5,11 +5,14 @@ All environment variables and configurable thresholds.
 No API keys may ever appear in frontend code or be committed to git.
 """
 
+import logging
 import os
 from pathlib import Path
 from pydantic_settings import BaseSettings
 from pydantic import Field
 from typing import Optional
+
+logger = logging.getLogger("intentguard.config")
 
 
 class Settings(BaseSettings):
@@ -128,7 +131,7 @@ def fetch_aws_secrets(secret_name: str, region_name: str = "us-east-1") -> dict:
     except ImportError:
         return {}
     except Exception as e:
-        print(f"Failed to fetch secrets from AWS: {e}")
+        logger.warning(f"Failed to fetch secrets from AWS: {e}")
         return {}
 
 def get_settings() -> Settings:

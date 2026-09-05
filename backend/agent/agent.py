@@ -79,51 +79,9 @@ def compute_semantic_cache_key(mandate: Dict[str, Any], transaction: Dict[str, A
 
 
 # ── Semantic Cache & Enterprise Guardrails ──────────────────
-def _init_canonical_cache() -> Dict[str, Dict]:
-    try:
-        from backend.data.scenarios import CONTROLLED_SCENARIOS
-        cache = {}
-        for sc in CONTROLLED_SCENARIOS:
-            mandate_id = sc.get("mandate_id")
-            desc = sc.get("transaction", {}).get("item_description", "").strip().lower()
-            if not mandate_id or not desc:
-                continue
-            real_mandate = {
-                "id": mandate_id,
-                "intent_text": sc.get("mandate_text", ""),
-                "allowed_categories": sc.get("allowed_categories", ["office_supplies", "travel", "groceries", "general", "stationery"]),
-                "exclusions": sc.get("exclusions", []),
-                "allowed_merchants": sc.get("allowed_merchants", []),
-            }
-            key = compute_semantic_cache_key(real_mandate, sc.get("transaction", {}), "v1")
-            expected = sc.get("with_intentguard_expected")
-            if expected == "ALLOW":
-                verdict = "fit"
-            elif expected == "BLOCK":
-                verdict = "no_fit"
-            else:
-                verdict = "ambiguous"
-            cache[key] = {
-                "extracted_facts": {
-                    "category": sc.get("transaction", {}).get("merchant_category", "general"),
-                    "item_type": desc,
-                    "purpose_indicators": ["canonical_benchmark"],
-                    "recipient": "self",
-                    "recurring_signal": False,
-                    "risk_flags": [],
-                },
-                "semantic_judgment_result": {
-                    "majority_verdict": verdict,
-                    "agreement_rate": 1.0,
-                    "samples": [{"verdict": verdict, "reasoning": sc.get("explanation", "")}],
-                },
-                "semantic_verdicts": [verdict, verdict, verdict],
-            }
-        return cache
-    except Exception:
-        return {}
+from backend.semantic.cache import get_semantic_cache, BoundedSemanticCache
 
-_SEMANTIC_CACHE: Dict[str, Dict] = _init_canonical_cache()
+_SEMANTIC_CACHE = get_semantic_cache()
 
 _INJECTION_PATTERNS = [
     r"ignore\s+(all\s+)?(previous|prior|above)\s+instructions?",
@@ -187,6 +145,7 @@ async def _run_evaluation_pipeline_internal(
     transaction_id: str,
     mandate_id: Optional[str] = None,
     request_id: Optional[str] = None,
+    idempotency_key: Optional[str] = None,
 ) -> Dict:
     """
     Run the complete IntentGuard evaluation pipeline.
@@ -200,6 +159,7 @@ async def _run_evaluation_pipeline_internal(
         transaction_id: ID of the transaction to evaluate
         mandate_id: Optional mandate ID override (otherwise read from transaction)
         request_id: Optional request ID for tracing
+        idempotency_key: Optional idempotency key for financial execution
     
     Returns:
         Dict with full decision response including audit trail
@@ -221,6 +181,9 @@ async def _run_evaluation_pipeline_internal(
                 request_id, transaction_id, "Transaction not found",
                 tool_call_records, pipeline_start
             )
+
+        if idempotency_key and not transaction.get("idempotency_key"):
+            transaction["idempotency_key"] = idempotency_key
 
         # Enrich messy or truncated Level 1 POS descriptions
         original_desc = transaction.get("item_description", "")
@@ -432,11 +395,15 @@ async def _run_evaluation_pipeline_internal(
 
             # Store in semantic cache only on successful analysis
             if extracted_facts is not None and semantic_judgment_result is not None:
-                _SEMANTIC_CACHE[cache_key] = {
-                    "extracted_facts": extracted_facts,
-                    "semantic_judgment_result": semantic_judgment_result,
-                    "semantic_verdicts": semantic_verdicts,
-                }
+                _SEMANTIC_CACHE.put(
+                    key=cache_key,
+                    value={
+                        "extracted_facts": extracted_facts,
+                        "semantic_judgment_result": semantic_judgment_result,
+                        "semantic_verdicts": semantic_verdicts,
+                    },
+                    mandate_id=mandate.get("id"),
+                )
 
         # ── Step 8: Compute Confidence (deterministic) ────────
         confidence_result, tool_record = await tool_compute_confidence(
@@ -520,6 +487,7 @@ async def run_evaluation_pipeline(
     transaction_id: str,
     mandate_id: Optional[str] = None,
     request_id: Optional[str] = None,
+    idempotency_key: Optional[str] = None,
 ) -> Dict:
     """
     Wrapper for the evaluation pipeline that enforces the hard timeout.
@@ -535,6 +503,7 @@ async def run_evaluation_pipeline(
                 transaction_id=transaction_id,
                 mandate_id=mandate_id,
                 request_id=request_id,
+                idempotency_key=idempotency_key,
             ),
             timeout=settings.agent_max_runtime_seconds
         )

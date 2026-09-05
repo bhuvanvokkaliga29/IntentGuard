@@ -1,7 +1,7 @@
 # Auditability & Replay Architecture
 
-## 1. Append-Only Audit Ledger
-Every transaction evaluation automatically writes an immutable record to the `audit_logs` table in SQLite (`backend/db.py`):
+## 1. Cryptographic Tamper-Evident Audit Chain
+Every transaction evaluation automatically writes a cryptographic tamper-evident record to the `audit_logs` table in SQLite (`backend/db.py`):
 - `id`: Unique UUIDv4 audit record identifier
 - `decision_id`: Foreign key reference to decision record
 - `policy_version`: Active policy version (e.g. `policy_v1`)

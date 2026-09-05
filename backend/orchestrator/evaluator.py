@@ -19,6 +19,7 @@ async def evaluate_transaction(
     transaction_id: str,
     mandate_id: Optional[str] = None,
     request_id: Optional[str] = None,
+    idempotency_key: Optional[str] = None,
 ) -> Dict:
     """
     Evaluate a transaction through the full IntentGuard pipeline.
@@ -54,6 +55,7 @@ async def evaluate_transaction(
             transaction_id=transaction_id,
             mandate_id=mandate_id,
             request_id=request_id,
+            idempotency_key=idempotency_key,
         )
         return result
 

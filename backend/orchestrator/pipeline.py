@@ -44,6 +44,35 @@ from backend.security.prompt_defense import (
 logger = logging.getLogger("intentguard.orchestrator.pipeline")
 
 
+def emit_pipeline_event(
+    event_type: str,
+    stage: str,
+    payload: Dict[str, Any],
+    run_id: Optional[str] = None,
+    agent_id: str = "IntentGuard",
+) -> None:
+    """Emit live structured telemetry event to event bus for SSE streaming."""
+    try:
+        import asyncio
+        from backend.orchestrator.event_bus import get_event_bus
+        bus = get_event_bus()
+        try:
+            loop = asyncio.get_running_loop()
+            loop.create_task(
+                bus.publish(
+                    event_type=event_type,
+                    run_id=run_id or "pipeline",
+                    agent_id=agent_id,
+                    stage=stage,
+                    payload=payload,
+                )
+            )
+        except RuntimeError:
+            pass
+    except Exception as e:
+        logger.debug(f"[TELEMETRY] Skipping event publish: {e}")
+
+
 # ── Stage 1: Intake Proposal ─────────────────────────────────
 def stage_intake_proposal(
     proposal_data: Dict[str, Any],
@@ -86,6 +115,18 @@ def stage_intake_proposal(
     intake["proposer_agent"] = str(proposal_data.get("proposer_agent", "AutonomousAgent")).strip()
     intake["declared_purpose"] = str(proposal_data.get("declared_purpose", "")).strip()
 
+    emit_pipeline_event(
+        event_type="pipeline.proposal.received",
+        stage="INTAKE",
+        payload={
+            "proposal_id": intake["id"],
+            "amount": amount,
+            "merchant": merchant_name,
+            "idempotency_key": idempotency_key,
+        },
+        run_id=intake["id"],
+    )
+
     return intake
 
 
@@ -112,6 +153,13 @@ def stage_normalize_proposal(
         normalized.get("metadata", {}),
     )
 
+    emit_pipeline_event(
+        event_type="pipeline.normalization.completed",
+        stage="NORMALIZATION",
+        payload={"is_safe": is_safe, "violation": violation},
+        run_id=normalized.get("id"),
+    )
+
     return normalized, is_safe, violation
 
 
@@ -125,7 +173,7 @@ def stage_verify_structural_constraints(
     Stage 3: Pure deterministic check of mandate hard constraints.
     Zero LLM involvement. Fast-path fail if any hard constraint is breached.
     """
-    return check_hard_constraints(
+    result = check_hard_constraints(
         txn_amount=proposal["amount"],
         txn_merchant_name=proposal["merchant_name"],
         txn_merchant_category=proposal.get("merchant_category", "general"),
@@ -140,6 +188,15 @@ def stage_verify_structural_constraints(
         cumulative_spent=cumulative_spent,
         transaction_location_hint=proposal.get("location_hint"),
     )
+
+    emit_pipeline_event(
+        event_type="pipeline.structural_check.completed",
+        stage="STRUCTURAL_CHECK",
+        payload={"overall_pass": result.overall_pass, "failure_reasons": result.failure_reasons},
+        run_id=proposal.get("id"),
+    )
+
+    return result
 
 
 # ── Stage 4: Verify Semantic Intent (LLM Isolation) ─────────
@@ -169,6 +226,12 @@ async def stage_verify_semantic_intent(
 
     if not extracted_facts:
         logger.warning("[SEMANTIC] Fact extraction returned None; fail-safe will apply.")
+        emit_pipeline_event(
+            event_type="pipeline.semantic_verification.completed",
+            stage="SEMANTIC_VERIFICATION",
+            payload={"status": "EXTRACTION_FAILED", "majority_verdict": None},
+            run_id=proposal.get("id"),
+        )
         return None, None, []
 
     semantic_judgment, _ = await tool_semantic_compare(
@@ -183,6 +246,17 @@ async def stage_verify_semantic_intent(
     semantic_verdicts = []
     if semantic_judgment and "samples" in semantic_judgment:
         semantic_verdicts = [s.get("verdict") for s in semantic_judgment["samples"]]
+
+    emit_pipeline_event(
+        event_type="pipeline.semantic_verification.completed",
+        stage="SEMANTIC_VERIFICATION",
+        payload={
+            "status": "COMPLETED",
+            "majority_verdict": semantic_judgment.get("majority_verdict") if semantic_judgment else None,
+            "sample_count": len(semantic_verdicts),
+        },
+        run_id=proposal.get("id"),
+    )
 
     return extracted_facts, semantic_judgment, semantic_verdicts
 
@@ -209,6 +283,17 @@ async def stage_assess_confidence(
         mandate_max_amount=mandate["max_amount_per_txn"],
         mandate_location_constraint=mandate.get("location_constraint"),
     )
+
+    emit_pipeline_event(
+        event_type="pipeline.confidence.calculated",
+        stage="CONFIDENCE_ASSESSMENT",
+        payload={
+            "confidence_score": confidence_dict.get("confidence_score", 0.0),
+            "evidence_is_sufficient": confidence_dict.get("evidence_is_sufficient", True),
+        },
+        run_id=proposal.get("id"),
+    )
+
     return confidence_dict
 
 
@@ -255,13 +340,25 @@ def stage_evaluate_deterministic_policy(
         }
 
     # If structural passed, evaluate deterministic policy via decision engine
-    return decide(
+    decision = decide(
         structural_pass=True,
         majority_verdict=semantic_verdict,
         confidence_score=confidence_score,
         has_extracted_facts=True,
         evidence_is_sufficient=evidence_is_sufficient,
     )
+
+    emit_pipeline_event(
+        event_type="pipeline.decision.evaluated",
+        stage="DETERMINISTIC_POLICY",
+        payload={
+            "final_decision": decision.get("final_decision"),
+            "decision_path": decision.get("decision_path"),
+            "confidence_score": confidence_score,
+        },
+    )
+
+    return decision
 
 
 # ── Stage 7: Record Audit Event (SHA-256 Chained) ────────────
@@ -280,6 +377,18 @@ async def stage_record_audit_event(
 
     dec_row = await create_decision(session, decision_data)
     audit_row = await create_audit_log(session, audit_data)
+
+    emit_pipeline_event(
+        event_type="pipeline.audit.written",
+        stage="AUDIT_LOGGING",
+        payload={
+            "decision_id": dec_row.id,
+            "audit_id": audit_row.id,
+            "sequence_number": audit_row.sequence_number,
+            "chain_hash": audit_row.chain_hash,
+        },
+        run_id=proposal.get("id"),
+    )
 
     return dec_row.id, audit_row.id
 
@@ -300,12 +409,19 @@ def stage_guard_execution_boundary(
             f"[EXECUTION_BOUNDARY] Execution prevented: decision is '{final_decision}' "
             f"(only ALLOW decisions can be dispatched for settlement)"
         )
-        return {
+        result = {
             "executed": False,
             "status": "BLOCKED_BY_GUARDRAIL",
             "reason": f"Execution gate rejected transaction: final decision is '{final_decision}'",
             "order": None,
         }
+        emit_pipeline_event(
+            event_type="pipeline.execution_boundary.evaluated",
+            stage="EXECUTION_BOUNDARY",
+            payload={"final_decision": final_decision, "executed": False, "status": "BLOCKED_BY_GUARDRAIL"},
+            run_id=proposal.get("id"),
+        )
+        return result
 
     # Transaction is officially authorized by IntentGuard
     gateway = get_razorpay_gateway()
@@ -325,10 +441,26 @@ def stage_guard_execution_boundary(
         currency=proposal.get("currency", "INR"),
         receipt=f"rcpt_{proposal.get('id', 'intentguard')[:16]}",
         idempotency_key=idempotency_key,
+        decision=final_decision,
     )
 
-    return {
+    exec_result = {
         "executed": order.get("success", False),
         "status": "DISPATCHED" if order.get("success") else "DISPATCH_FAILED",
         "order": order,
     }
+
+    emit_pipeline_event(
+        event_type="pipeline.execution_boundary.evaluated",
+        stage="EXECUTION_BOUNDARY",
+        payload={
+            "final_decision": final_decision,
+            "executed": exec_result["executed"],
+            "status": exec_result["status"],
+            "order_id": order.get("order_id"),
+        },
+        run_id=proposal.get("id"),
+    )
+
+    return exec_result
+
