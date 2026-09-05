@@ -239,13 +239,27 @@ async def get_engine():
                 pool_pre_ping=True,
             )
         else:
-            # Development SQLite engine
+            # Development SQLite engine (NullPool prevents connection persistence across async event loops)
+            from sqlalchemy.pool import NullPool
             _engine = create_async_engine(
                 db_url,
                 echo=False,
                 future=True,
+                poolclass=NullPool,
             )
     return _engine
+
+
+async def close_db():
+    """Dispose active database engine and reset factories (prevents cross-test event loop closure errors)."""
+    global _engine, _session_factory
+    if _engine is not None:
+        try:
+            await _engine.dispose()
+        except Exception:
+            pass
+        _engine = None
+    _session_factory = None
 
 
 async def get_session_factory():
