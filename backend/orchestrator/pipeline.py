@@ -58,15 +58,17 @@ def emit_pipeline_event(
         bus = get_event_bus()
         try:
             loop = asyncio.get_running_loop()
-            loop.create_task(
-                bus.publish(
-                    event_type=event_type,
-                    run_id=run_id or "pipeline",
-                    agent_id=agent_id,
-                    stage=stage,
-                    payload=payload,
+            if loop.is_running() and not loop.is_closed():
+                loop.create_task(
+                    bus.publish(
+                        event_type=event_type,
+                        run_id=run_id or "pipeline",
+                        agent_id=agent_id,
+                        stage=stage,
+                        payload=payload,
+                        persist_db=False,
+                    )
                 )
-            )
         except RuntimeError:
             pass
     except Exception as e:

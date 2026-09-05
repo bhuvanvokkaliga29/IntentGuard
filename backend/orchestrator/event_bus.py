@@ -57,26 +57,28 @@ class AgentTelemetryEvent:
         return f"event: {self.event_type}\ndata: {self.to_json()}\n\n"
 
 
+import threading
+
 class AgentEventBus:
     """Central async event bus for real-time telemetry streaming."""
 
     def __init__(self):
         self._subscribers: Set[asyncio.Queue] = set()
-        self._lock = asyncio.Lock()
+        self._lock = threading.RLock()
         self._recent_events: List[Dict[str, Any]] = []
         self._max_recent = 100
 
     async def subscribe(self) -> asyncio.Queue:
         """Register a new subscriber queue."""
         queue: asyncio.Queue = asyncio.Queue(maxsize=200)
-        async with self._lock:
+        with self._lock:
             self._subscribers.add(queue)
         logger.debug(f"[EVENT_BUS] New subscriber connected. Total active: {len(self._subscribers)}")
         return queue
 
     async def unsubscribe(self, queue: asyncio.Queue) -> None:
         """Unregister a subscriber queue."""
-        async with self._lock:
+        with self._lock:
             self._subscribers.discard(queue)
         logger.debug(f"[EVENT_BUS] Subscriber disconnected. Remaining: {len(self._subscribers)}")
 
@@ -101,7 +103,7 @@ class AgentEventBus:
         event_dict = event.to_dict()
 
         # Cache recent events for fast recovery / hydration
-        async with self._lock:
+        with self._lock:
             self._recent_events.insert(0, event_dict)
             if len(self._recent_events) > self._max_recent:
                 self._recent_events.pop()
@@ -118,18 +120,20 @@ class AgentEventBus:
             for dead in dead_queues:
                 self._subscribers.discard(dead)
 
-        # Asynchronously persist to DB if requested
+        # Asynchronously persist to DB if requested and loop is active
         if persist_db:
             try:
-                async with await get_session() as session:
-                    await create_agent_event(
-                        session=session,
-                        run_id=run_id,
-                        agent_id=agent_id,
-                        event_type=event_type,
-                        stage=stage,
-                        payload=payload,
-                    )
+                loop = asyncio.get_running_loop()
+                if loop.is_running() and not loop.is_closed():
+                    async with await get_session() as session:
+                        await create_agent_event(
+                            session=session,
+                            run_id=run_id,
+                            agent_id=agent_id,
+                            event_type=event_type,
+                            stage=stage,
+                            payload=payload,
+                        )
             except Exception as e:
                 logger.warning(f"[EVENT_BUS] Failed to persist event {event_type} to DB: {e}")
 
@@ -138,7 +142,8 @@ class AgentEventBus:
 
     def get_recent_events(self, limit: int = 30) -> List[Dict[str, Any]]:
         """Get recent in-memory telemetry events."""
-        return self._recent_events[:limit]
+        with self._lock:
+            return list(self._recent_events[:limit])
 
 
 # Global singleton event bus
@@ -151,3 +156,10 @@ def get_event_bus() -> AgentEventBus:
     if _event_bus is None:
         _event_bus = AgentEventBus()
     return _event_bus
+
+
+def reset_event_bus() -> None:
+    """Reset the global event bus singleton (for clean test isolation)."""
+    global _event_bus
+    _event_bus = None
+
