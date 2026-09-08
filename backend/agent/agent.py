@@ -272,6 +272,7 @@ async def _run_evaluation_pipeline_internal(
                 provider=provider,
                 tool_call_records=tool_call_records,
                 pipeline_start=pipeline_start,
+                mandate_version=int(mandate.get("version", 1)),
             )
 
         # ── Step 3.5: Security Guardrail (Multi-field Prompt Injection Defense) ──
@@ -314,6 +315,7 @@ async def _run_evaluation_pipeline_internal(
                 provider=provider,
                 tool_call_records=tool_call_records,
                 pipeline_start=pipeline_start,
+                mandate_version=int(mandate.get("version", 1)),
             )
 
         # ── Step 4: Get Merchant Context ──────────────────────
@@ -418,11 +420,83 @@ async def _run_evaluation_pipeline_internal(
 
         logger.info(f"[POLICY] Confidence: {confidence_result['confidence_score']}")
 
-        # ── Step 9: Deterministic Decision ────────────────────
+        # ── Step 8.5: Semantic Drift & Contextual Analysis ────
+        from backend.semantic.drift import analyze_semantic_drift
+        from backend.context.novelty import analyze_transaction_novelty
+        from backend.context.behavioral_baseline import compute_behavioral_baseline
+        from backend.context.temporal import check_temporal_authorization
+        from backend.context.agent_context import assess_agent_trust
+        from backend.policy.risk import aggregate_risk_signals
+        from backend.policy.versioning import POLICY_VERSION
+        from backend.db import list_transactions, transaction_row_to_dict
+
+        history: List[Dict[str, Any]] = []
+        try:
+            hist_rows = await list_transactions(session, mandate_id=mandate.get("id"))
+            history = [transaction_row_to_dict(r) for r in hist_rows if r.id != transaction.get("id")]
+        except Exception as e:
+            logger.debug(f"[CONTEXT] History retrieval: {e}")
+
         majority_verdict = None
         if semantic_judgment_result:
             majority_verdict = semantic_judgment_result.get("majority_verdict")
 
+        drift_analysis = analyze_semantic_drift(
+            mandate_intent=mandate.get("intent_text", ""),
+            item_description=transaction.get("item_description", ""),
+            merchant_name=transaction.get("merchant_name", ""),
+            merchant_category=transaction.get("merchant_category", ""),
+            declared_purpose=transaction.get("declared_purpose"),
+            extracted_facts=extracted_facts,
+            semantic_verdict=majority_verdict,
+            agreement_rate=semantic_judgment_result.get("agreement_rate", 1.0) if semantic_judgment_result else 1.0,
+        )
+
+        novelty_analysis = analyze_transaction_novelty(
+            txn_merchant=transaction.get("merchant_name", ""),
+            txn_category=transaction.get("merchant_category", ""),
+            txn_amount=transaction.get("amount", 0.0),
+            txn_item=transaction.get("item_description", ""),
+            history=history,
+        )
+
+        behavioral_analysis = compute_behavioral_baseline(
+            proposal_amount=transaction.get("amount", 0.0),
+            proposal_merchant=transaction.get("merchant_name", ""),
+            proposal_category=transaction.get("merchant_category", ""),
+            historical_txns=history,
+        )
+
+        temporal_analysis = check_temporal_authorization(
+            proposal_time=transaction.get("timestamp"),
+            effective_from=mandate.get("effective_from"),
+            effective_until=mandate.get("effective_until"),
+        )
+
+        agent_trust_context = assess_agent_trust(
+            transaction.get("proposer_agent") or "AutonomousAgent"
+        )
+
+        risk_profile = aggregate_risk_signals(
+            structural_passed=structural_result.get("overall_pass", False) and temporal_analysis.passed,
+            structural_failures=structural_result.get("failure_reasons", []) + temporal_analysis.reasons,
+            drift_analysis=drift_analysis.model_dump(),
+            novelty_analysis=novelty_analysis.model_dump(),
+            behavioral_analysis=behavioral_analysis.model_dump(),
+            temporal_analysis=temporal_analysis.model_dump(),
+            agent_trust=agent_trust_context.model_dump(),
+        )
+
+        # Purpose substitution drift overrides ambiguous or fit verdicts
+        if drift_analysis.is_drift_detected and drift_analysis.intent_fit == "no_fit" and majority_verdict != "no_fit":
+            majority_verdict = "no_fit"
+
+        # Temporal violation triggers structural fail
+        if not temporal_analysis.passed:
+            structural_result["overall_pass"] = False
+            structural_result["failure_reasons"] = structural_result.get("failure_reasons", []) + temporal_analysis.reasons
+
+        # ── Step 9: Deterministic Decision ────────────────────
         decision_result, tool_record = await tool_decide(
             structural_result=structural_result,
             majority_verdict=majority_verdict,
@@ -471,7 +545,16 @@ async def _run_evaluation_pipeline_internal(
             tool_call_records=tool_call_records,
             pipeline_start=pipeline_start,
             cache_hit=cache_hit,
+            drift_analysis=drift_analysis.model_dump(),
+            novelty_analysis=novelty_analysis.model_dump(),
+            behavioral_analysis=behavioral_analysis.model_dump(),
+            temporal_analysis=temporal_analysis.model_dump(),
+            agent_trust_context=agent_trust_context.model_dump(),
+            risk_profile=risk_profile.model_dump(),
+            mandate_version=int(mandate.get("version", 1)),
+            policy_version=POLICY_VERSION,
         )
+
 
     except Exception as e:
         logger.error(f"[DECISION] Pipeline error: {e}", exc_info=True)
@@ -565,6 +648,14 @@ async def _finalize_decision(
     tool_call_records: list,
     pipeline_start: float,
     cache_hit: bool = False,
+    drift_analysis: Optional[Dict] = None,
+    novelty_analysis: Optional[Dict] = None,
+    behavioral_analysis: Optional[Dict] = None,
+    temporal_analysis: Optional[Dict] = None,
+    agent_trust_context: Optional[Dict] = None,
+    risk_profile: Optional[Dict] = None,
+    mandate_version: int = 1,
+    policy_version: str = "2.1.0",
 ) -> Dict:
     """Record the decision and audit trail, return the full response."""
     settings = get_settings()
@@ -578,9 +669,18 @@ async def _finalize_decision(
         "id": decision_id,
         "transaction_id": transaction["id"],
         "mandate_id": mandate["id"],
+        "mandate_version": mandate_version,
+        "policy_version": policy_version,
         "structural_check_result": structural_result,
         "extracted_facts": extracted_facts,
         "semantic_judgment": semantic_judgment,
+        "drift_analysis": drift_analysis,
+        "novelty_analysis": novelty_analysis,
+        "behavioral_analysis": behavioral_analysis,
+        "temporal_analysis": temporal_analysis,
+        "agent_trust_context": agent_trust_context,
+        "risk_profile": risk_profile,
+        "review_priority": (risk_profile or {}).get("suggested_review_priority"),
         "confidence_score": confidence_result["confidence_score"],
         "final_decision": decision_result["final_decision"],
         "explanation": explanation,
@@ -603,6 +703,8 @@ async def _finalize_decision(
         "decision_id": decision_id,
         "request_id": request_id,
         "mandate_id": mandate["id"],
+        "mandate_version": mandate_version,
+        "policy_version": policy_version,
         "transaction_id": transaction["id"],
         "provider": provider.provider_name,
         "model": provider.model_name,
@@ -636,12 +738,21 @@ async def _finalize_decision(
     return {
         "decision_id": decision_id,
         "mandate_id": mandate["id"],
+        "mandate_version": mandate_version,
+        "policy_version": policy_version,
         "transaction_id": transaction["id"],
         "provider": provider.provider_name,
         "model": provider.model_name,
         "structural_result": structural_result,
         "extracted_facts": extracted_facts,
         "semantic_judgment": semantic_judgment,
+        "drift_analysis": drift_analysis,
+        "novelty_analysis": novelty_analysis,
+        "behavioral_analysis": behavioral_analysis,
+        "temporal_analysis": temporal_analysis,
+        "agent_trust_context": agent_trust_context,
+        "risk_profile": risk_profile,
+        "review_priority": (risk_profile or {}).get("suggested_review_priority"),
         "confidence": confidence_result["confidence_score"],
         "confidence_details": confidence_result,
         "final_decision": decision_result["final_decision"],
@@ -652,6 +763,7 @@ async def _finalize_decision(
         "cache_hit": cache_hit,
         "execution_result": execution_result,
     }
+
 
 
 def _build_structural_block_explanation(

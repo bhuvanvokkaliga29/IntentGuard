@@ -394,6 +394,31 @@ async def tool_check_hard_constraints(mandate: Dict, transaction: Dict):
     )
     latency = (time.time() - start) * 1000
     res_dict = result.model_dump() if hasattr(result, "model_dump") else (result if isinstance(result, dict) else {"overall_pass": getattr(result, "overall_pass", False), "failure_reasons": getattr(result, "failure_reasons", [])})
+
+    # Temporal constraint check
+    if mandate.get("effective_from") or mandate.get("effective_until"):
+        from backend.context.temporal import check_temporal_authorization
+        from datetime import datetime
+        eff_from = None
+        if mandate.get("effective_from"):
+            try:
+                eff_from = datetime.fromisoformat(str(mandate["effective_from"]).replace("Z", "+00:00"))
+            except Exception:
+                eff_from = None
+        eff_until = None
+        if mandate.get("effective_until"):
+            try:
+                eff_until = datetime.fromisoformat(str(mandate["effective_until"]).replace("Z", "+00:00"))
+            except Exception:
+                eff_until = None
+        temporal = check_temporal_authorization(
+            effective_from=eff_from,
+            effective_until=eff_until,
+        )
+        if not temporal.passed:
+            res_dict["overall_pass"] = False
+            res_dict["failure_reasons"] = res_dict.get("failure_reasons", []) + temporal.reasons
+
     record = {
         "tool_name": "tool_check_hard_constraints",
         "inputs": {"transaction_amount": transaction["amount"], "merchant": transaction["merchant_name"]},
@@ -401,6 +426,7 @@ async def tool_check_hard_constraints(mandate: Dict, transaction: Dict):
         "latency_ms": round(latency, 2),
         "status": "SUCCESS" if res_dict.get("overall_pass") else "FAILED",
     }
+
     return res_dict, record
 
 

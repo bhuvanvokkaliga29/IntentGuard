@@ -1,0 +1,290 @@
+[
+  {
+    "record_id": "6bd9fbc1-0ac4-4c46-83e1-5e5dda598907",
+    "decision_id": "cb482b39-5a07-4a72-90ff-8cc483bfe6dc",
+    "transaction_id": "eccc43b1-68f9-47fa-9ff4-686367799e63",
+    "mandate_id": "0e2f15b2-700c-42c8-8644-be8f5645adf8",
+    "mandate_version": 1,
+    "policy_version": "2.1.0",
+    "original_proposal": {
+      "transaction_id": "eccc43b1-68f9-47fa-9ff4-686367799e63"
+    },
+    "original_decision": "ESCALATE",
+    "reviewer_action": "APPROVED",
+    "reviewer_id": "compliance_officer_42",
+    "reviewer_notes": "Manually verified genuine business purpose with manager.",
+    "original_risk_profile": null,
+    "original_drift_analysis": null,
+    "recorded_at": "2026-09-08T19:12:19.792076+00:00"
+  },
+  {
+    "record_id": "ef538d6c-69f9-4305-a2e4-a830e9cde588",
+    "decision_id": "dec-review-exec-e23917",
+    "transaction_id": "txn-review-exec-b7c526",
+    "mandate_id": "mandate-001-office-supplies",
+    "mandate_version": 1,
+    "policy_version": "2.1.0",
+    "original_proposal": {
+      "transaction_id": "txn-review-exec-b7c526"
+    },
+    "original_decision": "ESCALATE",
+    "reviewer_action": "REJECTED",
+    "reviewer_id": "auditor_alice",
+    "reviewer_notes": "Not needed this quarter",
+    "original_risk_profile": null,
+    "original_drift_analysis": null,
+    "recorded_at": "2026-09-08T19:12:20.039084+00:00"
+  },
+  {
+    "record_id": "cfb1adc4-5ced-4290-b651-a6821cf3dca2",
+    "decision_id": "dec-review-exec-e23917",
+    "transaction_id": "txn-review-exec-b7c526",
+    "mandate_id": "mandate-001-office-supplies",
+    "mandate_version": 1,
+    "policy_version": "2.1.0",
+    "original_proposal": {
+      "transaction_id": "txn-review-exec-b7c526"
+    },
+    "original_decision": "REJECTED",
+    "reviewer_action": "APPROVED",
+    "reviewer_id": "auditor_bob",
+    "reviewer_notes": "Approved by finance manager",
+    "original_risk_profile": null,
+    "original_drift_analysis": null,
+    "recorded_at": "2026-09-08T19:12:20.080597+00:00"
+  },
+  {
+    "record_id": "1495781f-2bea-4d5a-ba09-2e1addd3e5c1",
+    "decision_id": "dec-review-exec-e23917",
+    "transaction_id": "txn-review-exec-b7c526",
+    "mandate_id": "mandate-001-office-supplies",
+    "mandate_version": 1,
+    "policy_version": "2.1.0",
+    "original_proposal": {
+      "transaction_id": "txn-review-exec-b7c526"
+    },
+    "original_decision": "APPROVED",
+    "reviewer_action": "APPROVED",
+    "reviewer_id": "auditor_bob",
+    "reviewer_notes": "Repeated approval click",
+    "original_risk_profile": null,
+    "original_drift_analysis": null,
+    "recorded_at": "2026-09-08T19:12:20.291890+00:00"
+  },
+  {
+    "record_id": "ec59688e-c238-4bc3-8a46-d50b4b1ccd92",
+    "decision_id": "193572f6-b74f-4778-8b3b-130dfb1963d5",
+    "transaction_id": "3bf3aae7-3e8d-4408-9b93-60484f6f7818",
+    "mandate_id": "e369ea03-c690-4886-8109-e8dbc0197fc9",
+    "mandate_version": 1,
+    "policy_version": "2.1.0",
+    "original_proposal": {
+      "transaction_id": "3bf3aae7-3e8d-4408-9b93-60484f6f7818"
+    },
+    "original_decision": "ESCALATE",
+    "reviewer_action": "APPROVE",
+    "reviewer_id": "compliance_officer_42",
+    "reviewer_notes": "Approved by Chief Compliance Officer",
+    "original_risk_profile": null,
+    "original_drift_analysis": null,
+    "recorded_at": "2026-09-08T19:23:53.820089+00:00"
+  },
+  {
+    "record_id": "e24ad687-40b3-4b32-9965-e971615c5d93",
+    "decision_id": "c4131f6d-8019-4b7b-88a8-d7967a283498",
+    "transaction_id": "dead1f56-942e-47fc-8fb2-2e7ab921cff3",
+    "mandate_id": "bf289a52-665c-4df3-ba14-93ee6eb2585c",
+    "mandate_version": 1,
+    "policy_version": "2.1.0",
+    "original_proposal": {
+      "transaction_id": "dead1f56-942e-47fc-8fb2-2e7ab921cff3"
+    },
+    "original_decision": "ESCALATE",
+    "reviewer_action": "APPROVE",
+    "reviewer_id": "compliance_officer_42",
+    "reviewer_notes": "Approved by Chief Compliance Officer",
+    "original_risk_profile": null,
+    "original_drift_analysis": null,
+    "recorded_at": "2026-09-08T19:25:19.220806+00:00"
+  },
+  {
+    "record_id": "65639aeb-baaa-4686-a3b8-3e6252ec9c7b",
+    "decision_id": "4a6a46ec-0fc1-4798-b6d4-401dec67b6a5",
+    "transaction_id": "3060d464-7080-4ceb-aaf1-51a27082483b",
+    "mandate_id": "d00d6c9b-42af-45fc-b760-cf26dc827bca",
+    "mandate_version": 1,
+    "policy_version": "2.1.0",
+    "original_proposal": {
+      "transaction_id": "3060d464-7080-4ceb-aaf1-51a27082483b"
+    },
+    "original_decision": "ESCALATE",
+    "reviewer_action": "APPROVE",
+    "reviewer_id": "compliance_officer_42",
+    "reviewer_notes": "Approved by Chief Compliance Officer",
+    "original_risk_profile": null,
+    "original_drift_analysis": null,
+    "recorded_at": "2026-09-08T19:25:34.981655+00:00"
+  },
+  {
+    "record_id": "8d43e4c8-6135-4862-9c9f-b05f8d0d0b88",
+    "decision_id": "d745683a-30a7-428c-85a5-3d1b07fdeb31",
+    "transaction_id": "dc3a7eb9-84a0-4b95-a93e-d3fb518b8c9d",
+    "mandate_id": "87853279-81b1-4805-9205-78e39e4128e2",
+    "mandate_version": 1,
+    "policy_version": "2.1.0",
+    "original_proposal": {
+      "transaction_id": "dc3a7eb9-84a0-4b95-a93e-d3fb518b8c9d"
+    },
+    "original_decision": "ESCALATE",
+    "reviewer_action": "APPROVED",
+    "reviewer_id": "compliance_officer_42",
+    "reviewer_notes": "Manually verified genuine business purpose with manager.",
+    "original_risk_profile": null,
+    "original_drift_analysis": null,
+    "recorded_at": "2026-09-08T19:25:36.061473+00:00"
+  },
+  {
+    "record_id": "66d256bd-63ea-488e-a534-a1dfaf2bef43",
+    "decision_id": "dec-review-exec-919652",
+    "transaction_id": "txn-review-exec-04689b",
+    "mandate_id": "mandate-001-office-supplies",
+    "mandate_version": 1,
+    "policy_version": "2.1.0",
+    "original_proposal": {
+      "transaction_id": "txn-review-exec-04689b"
+    },
+    "original_decision": "ESCALATE",
+    "reviewer_action": "REJECTED",
+    "reviewer_id": "auditor_alice",
+    "reviewer_notes": "Not needed this quarter",
+    "original_risk_profile": null,
+    "original_drift_analysis": null,
+    "recorded_at": "2026-09-08T19:25:36.263767+00:00"
+  },
+  {
+    "record_id": "5165a274-189c-4f42-9ea6-eefd3cfea1cc",
+    "decision_id": "dec-review-exec-919652",
+    "transaction_id": "txn-review-exec-04689b",
+    "mandate_id": "mandate-001-office-supplies",
+    "mandate_version": 1,
+    "policy_version": "2.1.0",
+    "original_proposal": {
+      "transaction_id": "txn-review-exec-04689b"
+    },
+    "original_decision": "REJECTED",
+    "reviewer_action": "APPROVED",
+    "reviewer_id": "auditor_bob",
+    "reviewer_notes": "Approved by finance manager",
+    "original_risk_profile": null,
+    "original_drift_analysis": null,
+    "recorded_at": "2026-09-08T19:25:36.299054+00:00"
+  },
+  {
+    "record_id": "d813120e-2561-4a3b-b103-6b0f89d95536",
+    "decision_id": "dec-review-exec-919652",
+    "transaction_id": "txn-review-exec-04689b",
+    "mandate_id": "mandate-001-office-supplies",
+    "mandate_version": 1,
+    "policy_version": "2.1.0",
+    "original_proposal": {
+      "transaction_id": "txn-review-exec-04689b"
+    },
+    "original_decision": "APPROVED",
+    "reviewer_action": "APPROVED",
+    "reviewer_id": "auditor_bob",
+    "reviewer_notes": "Repeated approval click",
+    "original_risk_profile": null,
+    "original_drift_analysis": null,
+    "recorded_at": "2026-09-08T19:25:36.477908+00:00"
+  },
+  {
+    "record_id": "a30f22a8-f6e1-4b23-8f57-475687016996",
+    "decision_id": "768e7189-983e-4c5a-a686-583ce82e6f27",
+    "transaction_id": "efcd0b21-28a6-480f-9b65-fedd82df354d",
+    "mandate_id": "6e95d3cd-2bdc-4379-8ae8-c09613ce6c32",
+    "mandate_version": 1,
+    "policy_version": "2.1.0",
+    "original_proposal": {
+      "transaction_id": "efcd0b21-28a6-480f-9b65-fedd82df354d"
+    },
+    "original_decision": "ESCALATE",
+    "reviewer_action": "APPROVE",
+    "reviewer_id": "compliance_officer_42",
+    "reviewer_notes": "Approved by Chief Compliance Officer",
+    "original_risk_profile": null,
+    "original_drift_analysis": null,
+    "recorded_at": "2026-09-08T19:43:06.428004+00:00"
+  },
+  {
+    "record_id": "ee4c0951-f6a9-4340-b999-900fcd796fb8",
+    "decision_id": "ad4bd8b5-4c1a-4850-9f26-481a65ce9032",
+    "transaction_id": "1bcb12dc-2f85-4a9d-b3d3-e4a1760f9f51",
+    "mandate_id": "7ec8aff9-f4e5-488c-88e0-2120a5756f85",
+    "mandate_version": 1,
+    "policy_version": "2.1.0",
+    "original_proposal": {
+      "transaction_id": "1bcb12dc-2f85-4a9d-b3d3-e4a1760f9f51"
+    },
+    "original_decision": "ESCALATE",
+    "reviewer_action": "APPROVED",
+    "reviewer_id": "compliance_officer_42",
+    "reviewer_notes": "Manually verified genuine business purpose with manager.",
+    "original_risk_profile": null,
+    "original_drift_analysis": null,
+    "recorded_at": "2026-09-08T19:43:07.382038+00:00"
+  },
+  {
+    "record_id": "b4c8381c-109b-4b6f-b461-55835458a06c",
+    "decision_id": "dec-review-exec-d5719e",
+    "transaction_id": "txn-review-exec-3ac387",
+    "mandate_id": "mandate-001-office-supplies",
+    "mandate_version": 1,
+    "policy_version": "2.1.0",
+    "original_proposal": {
+      "transaction_id": "txn-review-exec-3ac387"
+    },
+    "original_decision": "ESCALATE",
+    "reviewer_action": "REJECTED",
+    "reviewer_id": "auditor_alice",
+    "reviewer_notes": "Not needed this quarter",
+    "original_risk_profile": null,
+    "original_drift_analysis": null,
+    "recorded_at": "2026-09-08T19:43:07.530102+00:00"
+  },
+  {
+    "record_id": "58c3a1c7-06d0-4040-b8f3-635d37c514eb",
+    "decision_id": "dec-review-exec-d5719e",
+    "transaction_id": "txn-review-exec-3ac387",
+    "mandate_id": "mandate-001-office-supplies",
+    "mandate_version": 1,
+    "policy_version": "2.1.0",
+    "original_proposal": {
+      "transaction_id": "txn-review-exec-3ac387"
+    },
+    "original_decision": "REJECTED",
+    "reviewer_action": "APPROVED",
+    "reviewer_id": "auditor_bob",
+    "reviewer_notes": "Approved by finance manager",
+    "original_risk_profile": null,
+    "original_drift_analysis": null,
+    "recorded_at": "2026-09-08T19:43:07.566286+00:00"
+  },
+  {
+    "record_id": "b0fb974a-b671-4dca-9b99-ecb79a3597a0",
+    "decision_id": "dec-review-exec-d5719e",
+    "transaction_id": "txn-review-exec-3ac387",
+    "mandate_id": "mandate-001-office-supplies",
+    "mandate_version": 1,
+    "policy_version": "2.1.0",
+    "original_proposal": {
+      "transaction_id": "txn-review-exec-3ac387"
+    },
+    "original_decision": "APPROVED",
+    "reviewer_action": "APPROVED",
+    "reviewer_id": "auditor_bob",
+    "reviewer_notes": "Repeated approval click",
+    "original_risk_profile": null,
+    "original_drift_analysis": null,
+    "recorded_at": "2026-09-08T19:43:07.781311+00:00"
+  }
+]

@@ -64,7 +64,7 @@ function AuditContent() {
       <div className="max-w-5xl mx-auto w-full font-mono py-8 space-y-6">
         <div className="flex items-center justify-between pb-4 border-b border-graphite">
           <div>
-            <h1 className="text-[24px] font-bold text-paper uppercase">Immutable Audit Ledger</h1>
+            <h1 className="text-[24px] font-bold text-paper uppercase">Cryptographic Tamper-Evident Audit Chain</h1>
             <p className="text-[13px] text-fog font-sans mt-1">Cryptographically referenced log of all system decisions and intermediate tool states.</p>
           </div>
         </div>

@@ -16,18 +16,19 @@ from typing import Any, Dict, List, Optional, Set, Tuple
 
 # Comprehensive adversarial prompt injection and jailbreak patterns
 _INJECTION_PATTERNS: List[str] = [
-    r"ignore\s+(all\s+)?(previous|prior|above|other)\s+instructions?",
+    r"ignore\s+(all\s+)?(previous|prior|above|other)?\s*instructions?",
     r"system\s*prompt",
+    r"system\s*:",
     r"(system|admin|executive|policy|guard|rule|mandate|root|superuser)[\s_\-]+override",
     r"override[\s_\-]+(policy|system|guard|rule|mandate|budget|check|limit)",
-    r"(output|return)\s+verdict\s*[:=]\s*allow",
+    r"(output|return)\s+(verdict\s*[:=]\s*)?allow",
     r"bypass[\s_\-]+(intentguard|security|validation|verification|guardrail|rule|check)",
     r"disregard[\s_\-]+(the[\s_\-]+)?(mandate|rules|policy|instructions)",
     r"<\s*script",
     r"you\s+are\s+now\s+in\s+(developer|unrestricted|god)\s+mode",
     r"jailbreak",
     r"system\s*administrator\s*(says|orders|authorized|confirms)\s*allow",
-    r"increase\s+(the\s+)?budget",
+    r"(update|change|modify|set|increase)\s+(the\s+)?(mandate|budget)",
     r"add\s+merchant\s+to\s+(whitelist|allowlist)",
     r"treat\s+this\s+as\s+pre-?approved",
     r"don'?t\s+tell\s+(the\s+)?auditor",
@@ -45,6 +46,7 @@ _INJECTION_PATTERNS: List[str] = [
     r"disable[\s_\-]+policy",
     r"(admin|system)[\s_\-]+approved",
 ]
+
 
 # Zero-width and invisible unicode characters
 _ZERO_WIDTH_CHARS = [
@@ -175,7 +177,10 @@ def evaluate_prompt_defense(*inputs: Any) -> Tuple[bool, Optional[str]]:
                 return False, reason
 
         else:
-            trigger = scan_for_prompt_injection(str(item))
+            item_str = str(item)
+            if len(item_str) > 4000:
+                return False, f"Oversized input payload detected ({len(item_str)} chars > 4000 limit)"
+            trigger = scan_for_prompt_injection(item_str)
             if trigger:
                 return False, f"Adversarial prompt injection pattern detected: '{trigger}'"
 

@@ -65,6 +65,14 @@ class MandateBase(BaseModel):
     exclusions: Optional[List[str]] = Field(None, description="Explicitly excluded items/categories")
     location_constraint: Optional[str] = Field(None, description="e.g., 'domestic' for travel mandates")
     purpose_context: Optional[str] = Field(None, description="Additional context about the mandate purpose")
+    version: int = Field(default=1, description="Mandate policy version")
+    effective_from: Optional[datetime] = None
+    effective_until: Optional[datetime] = None
+    structured_profile: Optional[Dict[str, Any]] = None
+    change_summary: Optional[str] = None
+    previous_version_id: Optional[str] = None
+    author: Optional[str] = None
+    policy_state: str = "ACTIVE"
 
 
 class MandateCreate(MandateBase):
@@ -220,6 +228,15 @@ class DecisionBase(BaseModel):
     provider: Optional[str] = None
     model: Optional[str] = None
     prompt_version: Optional[str] = None
+    mandate_version: Optional[int] = 1
+    policy_version: Optional[str] = "2.1.0"
+    drift_analysis: Optional[Dict[str, Any]] = None
+    novelty_analysis: Optional[Dict[str, Any]] = None
+    behavioral_analysis: Optional[Dict[str, Any]] = None
+    temporal_analysis: Optional[Dict[str, Any]] = None
+    agent_trust_context: Optional[Dict[str, Any]] = None
+    risk_profile: Optional[Dict[str, Any]] = None
+    review_priority: Optional[str] = None
     latency_ms: int = 0
 
 
@@ -284,6 +301,15 @@ class DecisionResponse(BaseModel):
     explanation: str
     latency_ms: int
     audit_id: str
+    mandate_version: Optional[int] = 1
+    policy_version: Optional[str] = "2.1.0"
+    drift_analysis: Optional[Dict[str, Any]] = None
+    novelty_analysis: Optional[Dict[str, Any]] = None
+    behavioral_analysis: Optional[Dict[str, Any]] = None
+    temporal_analysis: Optional[Dict[str, Any]] = None
+    agent_trust_context: Optional[Dict[str, Any]] = None
+    risk_profile: Optional[Dict[str, Any]] = None
+    review_priority: Optional[str] = None
 
 
 # ── Evaluation ───────────────────────────────────────────────

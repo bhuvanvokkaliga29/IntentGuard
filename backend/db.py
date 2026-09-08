@@ -51,6 +51,14 @@ class MandateRow(Base):
     exclusions: Mapped[Optional[str]] = mapped_column(Text, nullable=True)  # JSON array or null
     location_constraint: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
     purpose_context: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    version: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
+    effective_from: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+    effective_until: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+    structured_profile: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    change_summary: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    previous_version_id: Mapped[Optional[str]] = mapped_column(String(36), nullable=True)
+    author: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
+    policy_state: Mapped[str] = mapped_column(String(30), default="ACTIVE", nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc))
 
 
@@ -74,9 +82,18 @@ class DecisionRow(Base):
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
     transaction_id: Mapped[str] = mapped_column(String(36), nullable=False)
     mandate_id: Mapped[str] = mapped_column(String(36), nullable=False, default="")
+    mandate_version: Mapped[Optional[int]] = mapped_column(Integer, default=1, nullable=True)
+    policy_version: Mapped[Optional[str]] = mapped_column(String(30), default="2.1.0", nullable=True)
     structural_check_result: Mapped[str] = mapped_column(Text, nullable=False, default="{}")  # JSON
     extracted_facts: Mapped[Optional[str]] = mapped_column(Text, nullable=True)  # JSON
     semantic_judgment: Mapped[Optional[str]] = mapped_column(Text, nullable=True)  # JSON
+    drift_analysis: Mapped[Optional[str]] = mapped_column(Text, nullable=True)  # JSON
+    novelty_analysis: Mapped[Optional[str]] = mapped_column(Text, nullable=True)  # JSON
+    behavioral_analysis: Mapped[Optional[str]] = mapped_column(Text, nullable=True)  # JSON
+    temporal_analysis: Mapped[Optional[str]] = mapped_column(Text, nullable=True)  # JSON
+    agent_trust_context: Mapped[Optional[str]] = mapped_column(Text, nullable=True)  # JSON
+    risk_profile: Mapped[Optional[str]] = mapped_column(Text, nullable=True)  # JSON
+    review_priority: Mapped[Optional[str]] = mapped_column(String(20), nullable=True)
     confidence_score: Mapped[float] = mapped_column(Float, nullable=False)
     final_decision: Mapped[str] = mapped_column(String(20), nullable=False)
     explanation: Mapped[str] = mapped_column(Text, nullable=False)
@@ -99,6 +116,8 @@ class AuditLogRow(Base):
     decision_id: Mapped[str] = mapped_column(String(36), nullable=False)
     request_id: Mapped[Optional[str]] = mapped_column(String(36), nullable=True)
     mandate_id: Mapped[str] = mapped_column(String(36), nullable=False)
+    mandate_version: Mapped[Optional[int]] = mapped_column(Integer, default=1, nullable=True)
+    policy_version: Mapped[Optional[str]] = mapped_column(String(30), default="2.1.0", nullable=True)
     transaction_id: Mapped[str] = mapped_column(String(36), nullable=False)
     provider: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
     model: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
@@ -108,6 +127,7 @@ class AuditLogRow(Base):
     extracted_facts: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     semantic_samples: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     confidence_calculation: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+
     final_decision: Mapped[Optional[str]] = mapped_column(String(20), nullable=True)
     explanation: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     latency_ms: Mapped[int] = mapped_column(Integer, default=0)
@@ -288,14 +308,34 @@ async def init_db():
             "ALTER TABLE decisions ADD COLUMN human_review_notes TEXT",
             "ALTER TABLE decisions ADD COLUMN human_reviewed_at DATETIME",
             "ALTER TABLE decisions ADD COLUMN reviewer_id VARCHAR(100)",
+            "ALTER TABLE decisions ADD COLUMN mandate_version INTEGER DEFAULT 1",
+            "ALTER TABLE decisions ADD COLUMN policy_version VARCHAR(30) DEFAULT '2.1.0'",
+            "ALTER TABLE decisions ADD COLUMN drift_analysis TEXT",
+            "ALTER TABLE decisions ADD COLUMN novelty_analysis TEXT",
+            "ALTER TABLE decisions ADD COLUMN behavioral_analysis TEXT",
+            "ALTER TABLE decisions ADD COLUMN temporal_analysis TEXT",
+            "ALTER TABLE decisions ADD COLUMN agent_trust_context TEXT",
+            "ALTER TABLE decisions ADD COLUMN risk_profile TEXT",
+            "ALTER TABLE decisions ADD COLUMN review_priority VARCHAR(20)",
+            "ALTER TABLE mandates ADD COLUMN version INTEGER DEFAULT 1",
+            "ALTER TABLE mandates ADD COLUMN effective_from DATETIME",
+            "ALTER TABLE mandates ADD COLUMN effective_until DATETIME",
+            "ALTER TABLE mandates ADD COLUMN structured_profile TEXT",
+            "ALTER TABLE mandates ADD COLUMN change_summary TEXT",
+            "ALTER TABLE mandates ADD COLUMN previous_version_id VARCHAR(36)",
+            "ALTER TABLE mandates ADD COLUMN author VARCHAR(100)",
+            "ALTER TABLE mandates ADD COLUMN policy_state VARCHAR(30) DEFAULT 'ACTIVE'",
             "ALTER TABLE audit_logs ADD COLUMN sequence_number INTEGER",
             "ALTER TABLE audit_logs ADD COLUMN previous_record_hash VARCHAR(64)",
             "ALTER TABLE audit_logs ADD COLUMN current_record_hash VARCHAR(64)",
+            "ALTER TABLE audit_logs ADD COLUMN mandate_version INTEGER DEFAULT 1",
+            "ALTER TABLE audit_logs ADD COLUMN policy_version VARCHAR(30) DEFAULT '2.1.0'",
         ]:
             try:
                 await conn.execute(text(col_def))
             except Exception:
                 pass
+
 
 
 async def reset_db():
@@ -340,6 +380,14 @@ async def create_mandate(session: AsyncSession, mandate_data: dict) -> MandateRo
         exclusions=json.dumps(mandate_data["exclusions"]) if mandate_data.get("exclusions") else None,
         location_constraint=mandate_data.get("location_constraint"),
         purpose_context=mandate_data.get("purpose_context"),
+        version=int(mandate_data.get("version", 1)),
+        effective_from=mandate_data.get("effective_from"),
+        effective_until=mandate_data.get("effective_until"),
+        structured_profile=_json_dumps_safe(mandate_data.get("structured_profile")),
+        change_summary=mandate_data.get("change_summary"),
+        previous_version_id=mandate_data.get("previous_version_id"),
+        author=mandate_data.get("author"),
+        policy_state=mandate_data.get("policy_state", "ACTIVE"),
         created_at=mandate_data.get("created_at", datetime.now(timezone.utc)),
     )
     session.add(row)
@@ -361,6 +409,82 @@ async def list_mandates(session: AsyncSession) -> List[MandateRow]:
     return list(result.scalars().all())
 
 
+async def list_mandate_versions(session: AsyncSession, mandate_id: str) -> List[MandateRow]:
+    """
+    List historical and active versions of a mandate lineage.
+    Traces parent-child previous_version_id links deterministically.
+    """
+    target = await get_mandate(session, mandate_id)
+    if not target:
+        return []
+
+    versions = [target]
+    current = target
+    seen = {target.id}
+    # Trace backward
+    while getattr(current, "previous_version_id", None):
+        parent_id = current.previous_version_id
+        if parent_id in seen:
+            break
+        seen.add(parent_id)
+        prev = await get_mandate(session, parent_id)
+        if prev:
+            versions.append(prev)
+            current = prev
+        else:
+            break
+
+    # Sort versions chronologically
+    versions.sort(key=lambda m: getattr(m, "version", 1) or 1)
+    return versions
+
+
+async def create_mandate_version(
+    session: AsyncSession,
+    mandate_id: str,
+    update_data: dict,
+    change_summary: str,
+    author: Optional[str] = "compliance_admin",
+) -> MandateRow:
+    """
+    Creates an immutable new version of a mandate, marking the prior version as SUPERSEDED.
+    Ensures complete lineage and version tracking for historical replay.
+    """
+    current = await get_mandate(session, mandate_id)
+    if not current:
+        raise ValueError(f"Mandate {mandate_id} does not exist.")
+
+    current_version = getattr(current, "version", 1) or 1
+    new_version = current_version + 1
+
+    # Mark existing version as SUPERSEDED
+    current.policy_state = "SUPERSEDED"
+
+    new_mandate_data = {
+        "id": str(uuid.uuid4()),
+        "intent_text": update_data.get("intent_text", current.intent_text),
+        "max_amount_per_txn": update_data.get("max_amount_per_txn", current.max_amount_per_txn),
+        "budget_cap": update_data.get("budget_cap", current.budget_cap),
+        "allowed_categories": update_data.get("allowed_categories", _json_loads_safe(current.allowed_categories) or []),
+        "allowed_merchants": update_data.get("allowed_merchants", _json_loads_safe(current.allowed_merchants)),
+        "frequency": update_data.get("frequency", current.frequency),
+        "exclusions": update_data.get("exclusions", _json_loads_safe(current.exclusions)),
+        "location_constraint": update_data.get("location_constraint", current.location_constraint),
+        "purpose_context": update_data.get("purpose_context", current.purpose_context),
+        "version": new_version,
+        "effective_from": update_data.get("effective_from"),
+        "effective_until": update_data.get("effective_until"),
+        "structured_profile": update_data.get("structured_profile", _json_loads_safe(getattr(current, "structured_profile", None))),
+        "change_summary": change_summary,
+        "previous_version_id": current.id,
+        "author": author,
+        "policy_state": "ACTIVE",
+    }
+    new_row = await create_mandate(session, new_mandate_data)
+    return new_row
+
+
+
 def mandate_row_to_dict(row: MandateRow) -> dict:
     """Convert a MandateRow to a dictionary with parsed JSON fields."""
     return {
@@ -374,6 +498,14 @@ def mandate_row_to_dict(row: MandateRow) -> dict:
         "exclusions": _json_loads_safe(row.exclusions),
         "location_constraint": row.location_constraint,
         "purpose_context": row.purpose_context,
+        "version": getattr(row, "version", 1) or 1,
+        "effective_from": row.effective_from.isoformat() if getattr(row, "effective_from", None) else None,
+        "effective_until": row.effective_until.isoformat() if getattr(row, "effective_until", None) else None,
+        "structured_profile": _json_loads_safe(getattr(row, "structured_profile", None)),
+        "change_summary": getattr(row, "change_summary", None),
+        "previous_version_id": getattr(row, "previous_version_id", None),
+        "author": getattr(row, "author", None),
+        "policy_state": getattr(row, "policy_state", "ACTIVE") or "ACTIVE",
         "created_at": row.created_at.isoformat() if row.created_at else None,
     }
 
@@ -441,9 +573,18 @@ async def create_decision(session: AsyncSession, decision_data: dict) -> Decisio
         id=decision_data.get("id", str(uuid.uuid4())),
         transaction_id=decision_data["transaction_id"],
         mandate_id=decision_data.get("mandate_id", ""),
+        mandate_version=int(decision_data.get("mandate_version", 1)),
+        policy_version=str(decision_data.get("policy_version", "2.1.0")),
         structural_check_result=_json_dumps_safe(decision_data.get("structural_check_result")),
         extracted_facts=_json_dumps_safe(decision_data.get("extracted_facts")),
         semantic_judgment=_json_dumps_safe(decision_data.get("semantic_judgment")),
+        drift_analysis=_json_dumps_safe(decision_data.get("drift_analysis")),
+        novelty_analysis=_json_dumps_safe(decision_data.get("novelty_analysis")),
+        behavioral_analysis=_json_dumps_safe(decision_data.get("behavioral_analysis")),
+        temporal_analysis=_json_dumps_safe(decision_data.get("temporal_analysis")),
+        agent_trust_context=_json_dumps_safe(decision_data.get("agent_trust_context")),
+        risk_profile=_json_dumps_safe(decision_data.get("risk_profile")),
+        review_priority=decision_data.get("review_priority"),
         confidence_score=decision_data["confidence_score"],
         final_decision=decision_data["final_decision"],
         explanation=decision_data["explanation"],
@@ -479,9 +620,18 @@ def decision_row_to_dict(row: DecisionRow) -> dict:
         "decision_id": row.id,
         "transaction_id": row.transaction_id,
         "mandate_id": row.mandate_id,
+        "mandate_version": getattr(row, "mandate_version", 1) or 1,
+        "policy_version": getattr(row, "policy_version", "2.1.0") or "2.1.0",
         "structural_result": _json_loads_safe(row.structural_check_result),
         "extracted_facts": _json_loads_safe(row.extracted_facts),
         "semantic_judgment": _json_loads_safe(row.semantic_judgment),
+        "drift_analysis": _json_loads_safe(getattr(row, "drift_analysis", None)),
+        "novelty_analysis": _json_loads_safe(getattr(row, "novelty_analysis", None)),
+        "behavioral_analysis": _json_loads_safe(getattr(row, "behavioral_analysis", None)),
+        "temporal_analysis": _json_loads_safe(getattr(row, "temporal_analysis", None)),
+        "agent_trust_context": _json_loads_safe(getattr(row, "agent_trust_context", None)),
+        "risk_profile": _json_loads_safe(getattr(row, "risk_profile", None)),
+        "review_priority": getattr(row, "review_priority", None),
         "confidence": row.confidence_score,
         "final_decision": row.final_decision,
         "explanation": row.explanation,
@@ -578,6 +728,8 @@ async def create_audit_log(session: AsyncSession, audit_data: dict) -> AuditLogR
         final_decision=final_dec,
         explanation=audit_data.get("explanation"),
         latency_ms=audit_data.get("latency_ms", 0),
+        mandate_version=int(audit_data.get("mandate_version", 1)),
+        policy_version=str(audit_data.get("policy_version", "2.1.0")),
         sequence_number=seq,
         previous_record_hash=prev_hash,
         current_record_hash=curr_hash,
@@ -624,6 +776,8 @@ async def update_decision_review(
         "request_id": correlation_id or str(uuid.uuid4()),
         "mandate_id": row.mandate_id,
         "transaction_id": row.transaction_id,
+        "mandate_version": getattr(row, "mandate_version", 1) or 1,
+        "policy_version": getattr(row, "policy_version", "2.1.0") or "2.1.0",
         "final_decision": f"HUMAN_{new_status}",
         "explanation": (
             f"Human review action '{new_status}' executed on decision {decision_id}. "
@@ -646,9 +800,31 @@ async def update_decision_review(
     }
     await create_audit_log(session, audit_data)
 
+    # Record into offline learning loop dataset (non-blocking)
+    try:
+        from backend.evaluation.learning_loop import HumanReviewFeedbackRecord, record_human_review_feedback
+        record_human_review_feedback(
+            HumanReviewFeedbackRecord(
+                record_id=str(uuid.uuid4()),
+                decision_id=row.id,
+                transaction_id=row.transaction_id,
+                mandate_id=row.mandate_id,
+                mandate_version=getattr(row, "mandate_version", 1) or 1,
+                policy_version=getattr(row, "policy_version", "2.1.0") or "2.1.0",
+                original_proposal={"transaction_id": row.transaction_id},
+                original_decision=prev_decision,
+                reviewer_action=new_status,
+                reviewer_id=reviewer_id or "human_compliance_officer",
+                reviewer_notes=notes,
+            )
+        )
+    except Exception:
+        pass
+
     await session.commit()
     await session.refresh(row)
     return row
+
 
 
 async def verify_audit_chain(session: AsyncSession) -> Tuple[bool, List[str]]:

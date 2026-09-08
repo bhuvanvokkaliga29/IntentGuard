@@ -52,7 +52,7 @@ export default function ArchitecturePage() {
           { id: "decision", label: "Deterministic Decision Engine", type: "decision", description: "Pure Python authority producing ALLOW, FLAG, BLOCK, ESCALATE." },
           { id: "execution", label: "Financial Execution Gateway", type: "gateway", description: "Razorpay payment boundary - only executes on validated ALLOW." },
           { id: "review", label: "Human Review Service", type: "human", description: "Operational queue for flagged or escalated exceptions." },
-          { id: "audit", label: "Immutable Audit Ledger", type: "storage", description: "Tamper-proof cryptographic record of every proposal & decision." }
+          { id: "audit", label: "Tamper-Evident Audit Chain", type: "storage", description: "Tamper-evident cryptographic record of every proposal & decision." }
         ];
         setData({ nodes: fallbackNodes, edges: [] });
         setActiveNode(fallbackNodes[3]);

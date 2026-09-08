@@ -107,7 +107,7 @@ async def run_smoke_test():
     print("  [OK] Self-healing successfully recovered from injected tool timeout.")
 
     # 8. Audit Ledger Verification
-    print("\n[8/9] Verifying Immutable Audit Ledger Records...")
+    print("\n[8/9] Verifying Tamper-Evident Audit Chain Records...")
     async with await get_session() as session:
         decisions = await list_decisions(session)
         audits = await list_audit_logs(session)

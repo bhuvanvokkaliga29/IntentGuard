@@ -280,9 +280,9 @@ async def health():
 async def readiness():
     """
     Readiness probe endpoint.
-    Verifies process, database connectivity, and configured LLM provider readiness.
+    Verifies process, database connectivity, cryptographic audit chain, and configured LLM provider readiness.
     """
-    checks = {"database": False, "llm_provider": False}
+    checks = {"database": False, "llm_provider": False, "audit_chain_integrity": False}
     try:
         session = await get_session()
         async with session:
@@ -293,6 +293,16 @@ async def readiness():
         checks["database_error"] = str(db_err)
 
     try:
+        from backend.db import verify_audit_chain
+        session = await get_session()
+        async with session:
+            is_valid, _ = await verify_audit_chain(session)
+            checks["audit_chain_integrity"] = is_valid
+    except Exception as audit_err:
+        checks["audit_chain_integrity"] = False
+        checks["audit_chain_error"] = str(audit_err)
+
+    try:
         from backend.llm.provider import get_provider
         provider = get_provider()
         checks["llm_provider"] = True
@@ -301,7 +311,10 @@ async def readiness():
     except Exception as llm_err:
         checks["llm_error"] = str(llm_err)
 
-    is_ready = checks["database"] and checks["llm_provider"]
+    from backend.policy.versioning import POLICY_VERSION
+    checks["policy_version"] = POLICY_VERSION
+
+    is_ready = checks["database"] and checks["llm_provider"] and checks["audit_chain_integrity"]
     status_code = 200 if is_ready else 503
     return JSONResponse(
         status_code=status_code,
@@ -590,6 +603,19 @@ async def get_mandate_endpoint(mandate_id: str):
         return mandate_row_to_dict(row)
 
 
+@app.get("/mandates/{mandate_id}/versions")
+async def get_mandate_versions_endpoint(mandate_id: str):
+    """Retrieve full version history and lineage for a spending mandate."""
+    from backend.db import list_mandate_versions
+    session = await get_session()
+    async with session:
+        rows = await list_mandate_versions(session, mandate_id)
+        if not rows:
+            raise HTTPException(status_code=404, detail="Mandate not found")
+        return [mandate_row_to_dict(r) for r in rows]
+
+
+
 # ── Transactions Endpoints ───────────────────────────────────
 
 @app.post("/transactions")
@@ -756,6 +782,51 @@ async def review_decision_endpoint(decision_id: str, req: HumanReviewRequest):
         return resp_dict
 
 
+@app.post("/decisions/{decision_id}/replay", dependencies=[Depends(rate_limit_guard)])
+async def replay_decision_endpoint(decision_id: str):
+    """
+    Deterministically reconstruct an existing authorization decision without executing payments.
+    Verifies that the policy, semantic drift, and contextual rules are 100% reproducible.
+    """
+    from backend.policy.replay import replay_decision
+    from backend.db import (
+        get_decision,
+        get_transaction,
+        get_mandate,
+        decision_row_to_dict,
+        transaction_row_to_dict,
+        mandate_row_to_dict,
+    )
+
+    session = await get_session()
+    async with session:
+        decision_row = await get_decision(session, decision_id)
+        if not decision_row:
+            raise HTTPException(status_code=404, detail="Decision not found")
+
+        txn_row = await get_transaction(session, decision_row.transaction_id)
+        if not txn_row:
+            raise HTTPException(status_code=404, detail="Transaction for decision not found")
+
+        mandate_id = txn_row.mandate_id or getattr(decision_row, "mandate_id", None)
+        mandate_row = await get_mandate(session, mandate_id) if mandate_id else None
+        if not mandate_row:
+            raise HTTPException(status_code=404, detail="Mandate for decision not found")
+
+        proposal_dict = transaction_row_to_dict(txn_row)
+        mandate_dict = mandate_row_to_dict(mandate_row)
+        decision_dict = decision_row_to_dict(decision_row)
+
+        replay_res = replay_decision(
+            proposal=proposal_dict,
+            mandate=mandate_dict,
+            original_decision_record=decision_dict,
+            mandate_version=getattr(decision_row, "mandate_version", 1) or 1,
+            policy_version=getattr(decision_row, "policy_version", "2.1.0") or "2.1.0",
+        )
+        return replay_res.model_dump()
+
+
 # ── Asynchronous Task Endpoints ──────────────────────────────
 
 @app.post("/tasks/evaluate", response_model=TaskEnqueueResponse, status_code=202, dependencies=[Depends(rate_limit_guard), Depends(require_api_key)])
@@ -808,6 +879,17 @@ async def verify_audit_chain_endpoint():
             "status": "SECURE_TAMPER_EVIDENT" if is_valid else "INTEGRITY_VIOLATION_DETECTED",
             "verified_at": datetime.now(timezone.utc).isoformat(),
         }
+
+
+@app.post("/security/red-team/execute", dependencies=[Depends(rate_limit_guard), Depends(require_api_key)])
+async def execute_red_team_endpoint():
+    """
+    Execute the automated adversarial red-team stress test suite across 17+ attack vectors.
+    Evaluates prompt injection, homoglyphs, zero-width chars, authority spoofing, and boundary evasion.
+    """
+    from backend.security.red_team import execute_red_team_suite
+    report = execute_red_team_suite()
+    return report
 
 
 # ── Evaluation & Matrix Endpoints ────────────────────────────
