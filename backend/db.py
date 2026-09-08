@@ -261,12 +261,24 @@ async def get_engine():
         else:
             # Development SQLite engine (NullPool prevents connection persistence across async event loops)
             from sqlalchemy.pool import NullPool
+            from sqlalchemy import event
+
             _engine = create_async_engine(
                 db_url,
                 echo=False,
                 future=True,
                 poolclass=NullPool,
+                connect_args={"timeout": 60.0},
             )
+
+            @event.listens_for(_engine.sync_engine, "connect")
+            def set_sqlite_pragma(dbapi_connection, connection_record):
+                cursor = dbapi_connection.cursor()
+                cursor.execute("PRAGMA journal_mode=WAL")
+                cursor.execute("PRAGMA busy_timeout=60000")
+                cursor.execute("PRAGMA synchronous=NORMAL")
+                cursor.close()
+
     return _engine
 
 
@@ -300,41 +312,57 @@ async def get_session() -> AsyncSession:
 async def init_db():
     """Initialize the database — create all tables and apply column migrations."""
     engine = await get_engine()
+    settings = get_settings()
     async with engine.begin() as conn:
+        if "sqlite" in settings.database_url:
+            await conn.execute(text("PRAGMA journal_mode=WAL;"))
+            await conn.execute(text("PRAGMA busy_timeout=60000;"))
+            await conn.execute(text("PRAGMA synchronous=NORMAL;"))
+
         await conn.run_sync(Base.metadata.create_all)
-        # Safe column migrations for existing databases
-        for col_def in [
-            "ALTER TABLE decisions ADD COLUMN human_review_status VARCHAR(50)",
-            "ALTER TABLE decisions ADD COLUMN human_review_notes TEXT",
-            "ALTER TABLE decisions ADD COLUMN human_reviewed_at DATETIME",
-            "ALTER TABLE decisions ADD COLUMN reviewer_id VARCHAR(100)",
-            "ALTER TABLE decisions ADD COLUMN mandate_version INTEGER DEFAULT 1",
-            "ALTER TABLE decisions ADD COLUMN policy_version VARCHAR(30) DEFAULT '2.1.0'",
-            "ALTER TABLE decisions ADD COLUMN drift_analysis TEXT",
-            "ALTER TABLE decisions ADD COLUMN novelty_analysis TEXT",
-            "ALTER TABLE decisions ADD COLUMN behavioral_analysis TEXT",
-            "ALTER TABLE decisions ADD COLUMN temporal_analysis TEXT",
-            "ALTER TABLE decisions ADD COLUMN agent_trust_context TEXT",
-            "ALTER TABLE decisions ADD COLUMN risk_profile TEXT",
-            "ALTER TABLE decisions ADD COLUMN review_priority VARCHAR(20)",
-            "ALTER TABLE mandates ADD COLUMN version INTEGER DEFAULT 1",
-            "ALTER TABLE mandates ADD COLUMN effective_from DATETIME",
-            "ALTER TABLE mandates ADD COLUMN effective_until DATETIME",
-            "ALTER TABLE mandates ADD COLUMN structured_profile TEXT",
-            "ALTER TABLE mandates ADD COLUMN change_summary TEXT",
-            "ALTER TABLE mandates ADD COLUMN previous_version_id VARCHAR(36)",
-            "ALTER TABLE mandates ADD COLUMN author VARCHAR(100)",
-            "ALTER TABLE mandates ADD COLUMN policy_state VARCHAR(30) DEFAULT 'ACTIVE'",
-            "ALTER TABLE audit_logs ADD COLUMN sequence_number INTEGER",
-            "ALTER TABLE audit_logs ADD COLUMN previous_record_hash VARCHAR(64)",
-            "ALTER TABLE audit_logs ADD COLUMN current_record_hash VARCHAR(64)",
-            "ALTER TABLE audit_logs ADD COLUMN mandate_version INTEGER DEFAULT 1",
-            "ALTER TABLE audit_logs ADD COLUMN policy_version VARCHAR(30) DEFAULT '2.1.0'",
-        ]:
-            try:
-                await conn.execute(text(col_def))
-            except Exception:
-                pass
+
+        # Check existing columns to prevent redundant/failing ALTER TABLE locks
+        if "sqlite" in settings.database_url:
+            columns_to_ensure = [
+                ("decisions", "human_review_status", "VARCHAR(50)"),
+                ("decisions", "human_review_notes", "TEXT"),
+                ("decisions", "human_reviewed_at", "DATETIME"),
+                ("decisions", "reviewer_id", "VARCHAR(100)"),
+                ("decisions", "mandate_version", "INTEGER DEFAULT 1"),
+                ("decisions", "policy_version", "VARCHAR(30) DEFAULT '2.1.0'"),
+                ("decisions", "drift_analysis", "TEXT"),
+                ("decisions", "novelty_analysis", "TEXT"),
+                ("decisions", "behavioral_analysis", "TEXT"),
+                ("decisions", "temporal_analysis", "TEXT"),
+                ("decisions", "agent_trust_context", "TEXT"),
+                ("decisions", "risk_profile", "TEXT"),
+                ("decisions", "review_priority", "VARCHAR(20)"),
+                ("mandates", "version", "INTEGER DEFAULT 1"),
+                ("mandates", "effective_from", "DATETIME"),
+                ("mandates", "effective_until", "DATETIME"),
+                ("mandates", "structured_profile", "TEXT"),
+                ("mandates", "change_summary", "TEXT"),
+                ("mandates", "previous_version_id", "VARCHAR(36)"),
+                ("mandates", "author", "VARCHAR(100)"),
+                ("mandates", "policy_state", "VARCHAR(30) DEFAULT 'ACTIVE'"),
+                ("audit_logs", "sequence_number", "INTEGER"),
+                ("audit_logs", "previous_record_hash", "VARCHAR(64)"),
+                ("audit_logs", "current_record_hash", "VARCHAR(64)"),
+                ("audit_logs", "mandate_version", "INTEGER DEFAULT 1"),
+                ("audit_logs", "policy_version", "VARCHAR(30) DEFAULT '2.1.0'"),
+            ]
+
+            table_columns_cache = {}
+            for table, col, col_type in columns_to_ensure:
+                try:
+                    if table not in table_columns_cache:
+                        res = await conn.execute(text(f"PRAGMA table_info({table});"))
+                        table_columns_cache[table] = {r[1] for r in res.fetchall()}
+                    if col not in table_columns_cache[table]:
+                        await conn.execute(text(f"ALTER TABLE {table} ADD COLUMN {col} {col_type};"))
+                        table_columns_cache[table].add(col)
+                except Exception:
+                    pass
 
 
 

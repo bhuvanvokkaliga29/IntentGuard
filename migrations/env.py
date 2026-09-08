@@ -48,7 +48,8 @@ def run_migrations_offline() -> None:
 def run_migrations_online() -> None:
     """Run migrations in 'online' mode."""
     sync_url = get_sync_db_url()
-    connectable = create_engine(sync_url, poolclass=pool.NullPool)
+    connect_args = {"timeout": 60.0} if "sqlite" in sync_url else {}
+    connectable = create_engine(sync_url, poolclass=pool.NullPool, connect_args=connect_args)
 
     with connectable.connect() as connection:
         context.configure(
